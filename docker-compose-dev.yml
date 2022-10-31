@@ -1,0 +1,31 @@
+version: "0.1"
+
+services:
+  db:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: test1234
+      MYSQL_DATABASE: icarus
+      MYSQL_USER: root
+      MYSQL_PASSWORD: test1234
+    tty: true
+    volumes:
+      - ./migration:/docker-entrypoint-initdb.d
+  web:
+    build: .
+    ports:
+      - 8080:8080
+    environment:
+      PORT: 8080
+      MYSQL_USER: root
+      MYSQL_PASSWORD: test1234
+      MYSQL_DATABASE: icarus
+      MYSQL_HOST: db
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "tcp://3306"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - db
