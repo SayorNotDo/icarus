@@ -8,7 +8,7 @@ import (
 type User struct {
 	UID            int64     `json:"uid" gorm:"primaryKey"`
 	Username       string    `json:"username" gorm:"unique; not null; type:varchar(32)"`
-	HashedPassword []byte    `json:"-" gorm:"-"`
+	HashedPassword []byte    `json:"hashed_password"`
 	ChineseName    string    `json:"chineseName" gorm:"type:varchar(32)""`
 	RoleId         int8      `json:"roleId" gorm:"default:5"`
 	EmployeeId     string    `json:"employeeId" gorm:"<-:false; type:varchar(32)"`
