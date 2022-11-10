@@ -29,15 +29,15 @@ func (c *Controller) logout() {
 	c.Session.Destroy()
 }
 
-// Get v1/api/user
-func (c *Controller) Get() (results []User) {
-	return c.Service.GetAll()
-}
+//// Get v1/api/user
+//func (c *Controller) Get() (results []User) {
+//	return c.Service.GetAll()
+//}
 
-// GetBy v1/api/user/{uid:int64}
-func (c *Controller) GetBy(uid int64) (u User, found bool) {
-	return c.Service.GetByID(uid) // throw 404 if not found
-}
+//// GetBy v1/api/user/{uid:int64}
+//func (c *Controller) GetBy(uid int64) (u User, found bool) {
+//	return c.Service.GetByID(uid) // throw 404 if not found
+//}
 
 // PostRegister v1/api/user/register
 func (c *Controller) PostRegister() mvc.Result {
@@ -46,11 +46,14 @@ func (c *Controller) PostRegister() mvc.Result {
 	var params map[string]interface{}
 	// return while read json occur error
 	if err := c.Ctx.ReadJSON(&params); err != nil {
-		c.Ctx.JSON(iris.Map{
-			"code":    5000,
-			"message": err.Error(),
-			"data":    "",
-		})
+		return mvc.Response{
+			ContentType: "application",
+			Object: iris.Map{
+				"code":    5000,
+				"message": err.Error(),
+				"data":    struct{}{},
+			},
+		}
 	}
 	username := params["username"]
 	password := params["password"]
@@ -62,19 +65,24 @@ func (c *Controller) PostRegister() mvc.Result {
 		Phone:    phone.(string),
 	})
 	if err != nil {
-		c.Ctx.JSON(iris.Map{
-			"code":    2000,
-			"message": err.Error(),
-			"data":    "",
-		})
+		return mvc.Response{
+			ContentType: "application/json",
+			Object: iris.Map{
+				"code":    2000,
+				"message": err.Error(),
+				"data":    struct{}{},
+			},
+		}
 	}
 	c.Session.Set(userIDKey, u.UID)
-	c.Ctx.JSON(iris.Map{
-		"code":    2000,
-		"message": "User register success!",
-		"data":    "{}",
-	})
-	return nil
+	return mvc.Response{
+		ContentType: "application/json",
+		Object: iris.Map{
+			"code":    2000,
+			"message": "user register success!",
+			"data":    u,
+		},
+	}
 }
 
 // GetRegister v1/api/user/register

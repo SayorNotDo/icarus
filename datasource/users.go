@@ -1,7 +1,7 @@
 package datasource
 
 import (
-	"icaru/user"
+	"icarus/user"
 	"time"
 )
 

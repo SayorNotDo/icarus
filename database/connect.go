@@ -5,7 +5,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"icaru/utils"
+	"icarus/utils"
 	"log"
 	"os"
 	"time"

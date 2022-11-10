@@ -6,3 +6,6 @@ models  模型存放
 repository  数据库操作结构体存放
 service 业务逻辑代码存放
 controller  控制器存放
+
+#热重启iris项目
+rizla main

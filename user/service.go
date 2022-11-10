@@ -7,10 +7,11 @@ import (
 
 // UserService will deal with `user` model CRUD operation
 type UserService interface {
-	GetAll() []User
-	GetByID(uid int64) (User, bool)
-	DeleteByID(uid int64) bool
 	Create(password string, user User) (User, error)
+	Update(user User) (User, error)
+	//GetAll() []User
+	//GetByID(uid int64) (User, bool)
+	//DeleteByID(uid int64) bool
 }
 
 func NewUserService(repo UserRepository) UserService {
@@ -23,7 +24,7 @@ type userService struct {
 	repo UserRepository
 }
 
-// Create insert a new User
+// Create insert a new user
 // the password is the client-typed password
 // it will be hashed before the insertion to our repository.
 func (u *userService) Create(password string, user User) (User, error) {
@@ -32,28 +33,42 @@ func (u *userService) Create(password string, user User) (User, error) {
 	if user.UID > 0 || password == "" || user.Username == "" {
 		return User{}, errors.New("unable to create this user")
 	}
+	log.Println("validate if the user is already registered.")
+	_, found := u.repo.Select(user)
+	log.Printf("validate result: %v", found)
+	if found == true {
+		return User{}, errors.New("user already exist")
+	}
 	hashed, err := GeneratePassword(password)
+	log.Printf("Get hashed password: %s", hashed)
 	if err != nil {
+		log.Println("generate password error!")
 		return User{}, err
 	}
 	user.HashedPassword = hashed
+	log.Printf("user's Info: %v", user)
 	return u.repo.InsertOrUpdate(user)
 }
 
-func (u *userService) GetAll() []User {
-	return u.repo.SelectMany(func(_ User) bool {
-		return true
-	}, -1)
+func (u *userService) Update(user User) (User, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (u *userService) GetByID(uid int64) (User, bool) {
-	return u.repo.Select(func(s User) bool {
-		return s.UID == uid
-	})
-}
-
-func (u userService) DeleteByID(uid int64) bool {
-	return u.repo.Delete(func(s User) bool {
-		return s.UID == uid
-	}, 1)
-}
+//func (u *userService) GetAll() []User {
+//	return u.repo.SelectMany(func(_ User) bool {
+//		return true
+//	}, -1)
+//}
+//
+//func (u *userService) GetByID(uid int64) (User, bool) {
+//	return u.repo.Select(func(s User) bool {
+//		return s.UID == uid
+//	})
+//}
+//
+//func (u userService) DeleteByID(uid int64) bool {
+//	return u.repo.Delete(func(s User) bool {
+//		return s.UID == uid
+//	}, 1)
+//}

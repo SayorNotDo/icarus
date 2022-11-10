@@ -1,7 +1,8 @@
 package user
 
 import (
-	"icaru/database"
+	"icarus/database"
+	"log"
 	"sync"
 )
 
@@ -11,20 +12,19 @@ type Query func(User) bool
 // UserRepository will process some user instance operation
 // interface of test
 type UserRepository interface {
-	Exec(query Query, action Query, limit int, mode int) (ok bool)
-	Select(query Query) (user User, found bool)
-	SelectMany(query Query, limit int) (results []User)
 	InsertOrUpdate(user User) (updateUser User, err error)
-	Delete(query Query, limit int) (deleted bool)
+	Select(user User) (selectUser User, found bool)
+	//Exec(query Query, action Query, limit int, mode int) (ok bool)
+	//SelectMany(query Query, limit int) (results []User)
+	//Delete(query Query, limit int) (deleted bool)
 }
 
-func NewUserRepository(source map[int64]User) UserRepository {
-	return &userMemoryRepository{source: source}
+func NewUserRepository() UserRepository {
+	return &userRepository{}
 }
 
-type userMemoryRepository struct {
-	source map[int64]User
-	mu     sync.RWMutex
+type userRepository struct {
+	mu sync.RWMutex
 }
 
 const (
@@ -32,50 +32,49 @@ const (
 	ReadWriteMode
 )
 
-func (r *userMemoryRepository) Exec(query Query, action Query, actionLimit int, mode int) (ok bool) {
-	loops := 0
-	if mode == ReadOnlyMode {
-		r.mu.RLock()
-		defer r.mu.RUnlock()
-	} else {
-		r.mu.Lock()
-		defer r.mu.Unlock()
-	}
+//func (r *userMemoryRepository) Exec(query Query, action Query, actionLimit int, mode int) (ok bool) {
+//	loops := 0
+//	if mode == ReadOnlyMode {
+//		r.mu.RLock()
+//		defer r.mu.RUnlock()
+//	} else {
+//		r.mu.Lock()
+//		defer r.mu.Unlock()
+//	}
+//
+//	for _, user := range r.source {
+//		ok = query(user)
+//		if ok {
+//			if action(user) {
+//				loops++
+//				if actionLimit >= loops {
+//					break
+//				}
+//			}
+//		}
+//	}
+//	return
+//}
 
-	for _, user := range r.source {
-		ok = query(user)
-		if ok {
-			if action(user) {
-				loops++
-				if actionLimit >= loops {
-					break
-				}
-			}
-		}
+func (r *userRepository) Select(user User) (u User, found bool) {
+	log.Println("Query User info from database.")
+	result := database.Db.Model(&User{}).Where("username = ?", user.Username).First(&u)
+	log.Printf("Query Result: %v", result.Error)
+	if result.Error == nil {
+		found = true
 	}
 	return
 }
 
-func (r *userMemoryRepository) Select(query Query) (u User, found bool) {
-	found = r.Exec(query, func(s User) bool {
-		u = s
-		return true
-	}, 1, ReadOnlyMode)
-	if !found {
-		u = User{}
-	}
-	return
-}
+//func (r *userMemoryRepository) SelectMany(query Query, limit int) (results []User) {
+//	r.Exec(query, func(s User) bool {
+//		results = append(results, s)
+//		return true
+//	}, limit, ReadOnlyMode)
+//	return
+//}
 
-func (r *userMemoryRepository) SelectMany(query Query, limit int) (results []User) {
-	r.Exec(query, func(s User) bool {
-		results = append(results, s)
-		return true
-	}, limit, ReadOnlyMode)
-	return
-}
-
-func (r *userMemoryRepository) InsertOrUpdate(user User) (updateUser User, err error) {
+func (r *userRepository) InsertOrUpdate(user User) (updateUser User, err error) {
 	//uid := user.UID
 	//if uid == 0 {
 	//	var lastUID int64
@@ -111,11 +110,26 @@ func (r *userMemoryRepository) InsertOrUpdate(user User) (updateUser User, err e
 	//r.source[uid] = user
 	//r.mu.Unlock()
 	//return user, nil
-	database.Db.Model(&user).Create(map[string]interface{}{})
-	return user, nil
+	uid := user.UID
+	log.Printf("get user'UID: %d ", uid)
+	// validate if the user is already registered
+	if uid == 0 {
+		log.Println("new user for create")
+		// find the biggest UID in database avoid duplicated
+		var lastUser User
+		database.Db.Model(&User{}).First(&lastUser)
+		user.UID = lastUser.UID + 1
+		log.Printf("new user's UID: %d: ", user.UID)
+		database.Db.Model(&User{}).Create(&user)
+		log.Println("create user success!")
+		return user, nil
+	} else {
+		log.Println("try to update user info")
+		return User{}, nil
+	}
 }
 
-func (r *userMemoryRepository) Delete(query Query, limit int) (deleted bool) {
+func (r *userRepository) Delete(query Query, limit int) (deleted bool) {
 	//TODO implement me
 	panic("implement me")
 }

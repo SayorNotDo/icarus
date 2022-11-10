@@ -21,11 +21,23 @@ type User struct {
 	Department     string    `json:"department" gorm:"type:varchar(255)"`
 }
 
+type Tabler interface {
+	TableName() string
+}
+
+func (User) TableName() string {
+	return "user"
+}
+
 type Department struct {
 	DID     int16  `json:"did" gorm:"primaryKey"`
 	Name    string `json:"name" gorm:"not null; type:varchar(255)"`
 	Center  string `json:"center" gorm:"type:varchar(255)"`
 	Company string `json:"company" gorm:"not null; type:varchar(255)"`
+}
+
+func (Department) TableName() string {
+	return "department"
 }
 
 type Serializer struct {
