@@ -2,8 +2,6 @@ package main
 
 import (
 	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/middleware/logger"
-	"github.com/kataras/iris/v12/middleware/recover"
 	"icarus/database"
 	"icarus/router"
 	"icarus/user"
@@ -18,21 +16,11 @@ func init() {
 	if err != nil {
 		return
 	}
-	//database.Db.Migrator().RenameTable("users", "user")
-	//database.Db.Migrator().RenameTable("departments", "department")
 }
 
 func main() {
 
 	app := router.InitRouter()
-
-	app.Use(recover.New())
-	app.Use(logger.New())
-
-	app.Logger().SetLevel("Debug")
-
-	// loading view templates path
-	app.RegisterView(iris.HTML("./templates", ".html"))
 
 	// Register Controller
 	router.RootRouter(app)

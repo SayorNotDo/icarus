@@ -1,11 +1,12 @@
 package user
 
 import (
-	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/context"
 	"github.com/kataras/iris/v12/mvc"
 	"github.com/kataras/iris/v12/sessions"
+	"icarus/utils"
+	"log"
 )
 
 type Controller struct {
@@ -46,14 +47,7 @@ func (c *Controller) PostRegister() mvc.Result {
 	var params map[string]interface{}
 	// return while read json occur error
 	if err := c.Ctx.ReadJSON(&params); err != nil {
-		return mvc.Response{
-			ContentType: "application",
-			Object: iris.Map{
-				"code":    5000,
-				"message": err.Error(),
-				"data":    struct{}{},
-			},
-		}
+		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
 	username := params["username"]
 	password := params["password"]
@@ -65,24 +59,10 @@ func (c *Controller) PostRegister() mvc.Result {
 		Phone:    phone.(string),
 	})
 	if err != nil {
-		return mvc.Response{
-			ContentType: "application/json",
-			Object: iris.Map{
-				"code":    2000,
-				"message": err.Error(),
-				"data":    struct{}{},
-			},
-		}
+		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
 	c.Session.Set(userIDKey, u.UID)
-	return mvc.Response{
-		ContentType: "application/json",
-		Object: iris.Map{
-			"code":    2000,
-			"message": "user register success!",
-			"data":    u,
-		},
-	}
+	return utils.RestfulResponse(2000, "user register success!", u)
 }
 
 // GetRegister v1/api/user/register
@@ -99,15 +79,15 @@ func (c *Controller) GetRegister() mvc.Result {
 func (c *Controller) PostLogin() mvc.Result {
 	var params map[string]interface{}
 	if err := c.Ctx.ReadJSON(&params); err != nil {
-		return mvc.Response{
-			Text: err.Error(),
-		}
+		return utils.RestfulResponse(2000, err.Error(), map[string]string{})
 	}
-	//username := params["username"]
-	//password := params["password"]
-	return mvc.Response{
-		Text: fmt.Sprintf("%v, %v", params["username"], params["password"]),
+	username := params["username"]
+	password := params["password"]
+	Token, err := c.Service.Login(username.(string), password.(string))
+	if err != nil {
+		return utils.RestfulResponse(2001, err.Error(), map[string]string{})
 	}
+	return utils.RestfulResponse(2000, "login success!", map[string]string{"token": string(Token)})
 }
 
 // PostAuthenticate v1/api/user/authenticate
@@ -123,10 +103,22 @@ func (c *Controller) PostAuthenticate() mvc.Result {
 	}
 }
 
-// PostLogout http://localhost:8080/v1/api/user/logout
+// PostLogout v1/api/user/logout
 func (c *Controller) PostLogout() mvc.Result {
 	return mvc.Response{
 		Text: "Logout success!",
+	}
+}
+
+// PutUpdate v1/api/user/update
+func (c *Controller) PutUpdate() mvc.Result {
+	var params map[string]interface{}
+	if err := c.Ctx.ReadJSON(&params); err != nil {
+		return utils.RestfulResponse(2000, err.Error(), map[string]string{})
+	}
+	log.Printf("json: %v", params)
+	return mvc.Response{
+		Text: "Update success",
 	}
 }
 

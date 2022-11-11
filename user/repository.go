@@ -75,41 +75,6 @@ func (r *userRepository) Select(user User) (u User, found bool) {
 //}
 
 func (r *userRepository) InsertOrUpdate(user User) (updateUser User, err error) {
-	//uid := user.UID
-	//if uid == 0 {
-	//	var lastUID int64
-	//	// find the biggest uid in order to avoid duplicated
-	//	r.mu.RLock()
-	//	for _, item := range r.source {
-	//		if item.UID > lastUID {
-	//			lastUID = item.UID
-	//		}
-	//	}
-	//	r.mu.RUnlock()
-	//	uid = lastUID + 1
-	//	user.UID = uid
-	//
-	//	// map-specific thing
-	//	r.mu.Lock()
-	//	r.source[uid] = user
-	//	r.mu.Unlock()
-	//	return user, nil
-	//}
-	//_, exists := r.Select(func(user User) bool {
-	//	return user.UID == uid
-	//})
-	//if !exists {
-	//	return User{}, errors.New("failed to update a nonexistent user")
-	//}
-	//// or comment these and r.source[id] = user for pure replace
-	////if user.Username != "" {
-	////	current.Username = user.Username
-	////}
-	//// map specific thing
-	//r.mu.Lock()
-	//r.source[uid] = user
-	//r.mu.Unlock()
-	//return user, nil
 	uid := user.UID
 	log.Printf("get user'UID: %d ", uid)
 	// validate if the user is already registered

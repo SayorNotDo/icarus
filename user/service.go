@@ -9,6 +9,7 @@ import (
 type UserService interface {
 	Create(password string, user User) (User, error)
 	Update(user User) (User, error)
+	Login(username, password string) (token []byte, err error)
 	//GetAll() []User
 	//GetByID(uid int64) (User, bool)
 	//DeleteByID(uid int64) bool
@@ -53,6 +54,20 @@ func (u *userService) Create(password string, user User) (User, error) {
 func (u *userService) Update(user User) (User, error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (u *userService) Login(username, password string) (token []byte, err error) {
+	user, found := u.repo.Select(User{Username: username})
+	if found != true {
+		return nil, errors.New("user is not exist")
+	}
+	res, _ := ValidatePassword(password, user.HashedPassword)
+	if res == true {
+		token, err := generateToken(Signer, user.Username, user.UID)
+		log.Printf("generate func result: %v, %v", token, err)
+		return token, err
+	}
+	return nil, errors.New("username or password wrong")
 }
 
 //func (u *userService) GetAll() []User {
