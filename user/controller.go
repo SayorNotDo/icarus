@@ -90,24 +90,9 @@ func (c *Controller) PostLogin() mvc.Result {
 	return utils.RestfulResponse(2000, "login success!", map[string]string{"token": string(Token)})
 }
 
-// PostAuthenticate v1/api/user/authenticate
-func (c *Controller) PostAuthenticate() mvc.Result {
-	var params map[string]interface{}
-	if err := c.Ctx.ReadJSON(&params); err != nil {
-		return mvc.Response{
-			Text: err.Error(),
-		}
-	}
-	return mvc.Response{
-		Text: "--------------authenticate interface--------------",
-	}
-}
-
 // PostLogout v1/api/user/logout
 func (c *Controller) PostLogout() mvc.Result {
-	return mvc.Response{
-		Text: "Logout success!",
-	}
+	return utils.RestfulResponse(2000, "user has logout!", map[string]string{})
 }
 
 // PutUpdate v1/api/user/update
