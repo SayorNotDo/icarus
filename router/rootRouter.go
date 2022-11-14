@@ -12,8 +12,8 @@ const RoutePrefix = "/v1/api"
 func RootRouter(app *iris.Application) {
 	userParty := app.Party(RoutePrefix + "/user")
 	// userParty.Use(user.AuthenticatedHandler)
-	app.UseRouter(iris.NewConditionalHandler(isNotTargetPath, user.AuthenticatedHandler))
 	mvc.Configure(userParty, UserRouter)
+	app.UseRouter(iris.NewConditionalHandler(isNotTargetPath, user.AuthenticatedHandler))
 }
 
 func isNotTargetPath(ctx iris.Context) bool {

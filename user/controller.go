@@ -4,6 +4,7 @@ import (
 	"icarus/utils"
 	"log"
 
+	"github.com/iris-contrib/middleware/jwt"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/context"
 	"github.com/kataras/iris/v12/mvc"
@@ -71,6 +72,11 @@ func (c *Controller) PostLogin() mvc.Result {
 
 // PostLogout v1/api/user/logout
 func (c *Controller) PostLogout() mvc.Result {
+	token := c.Ctx.Values().Get("jwt").(*jwt.Token)
+	res := token.Claims.(jwt.MapClaims)
+	uid := res["uid"]
+	username := res["username"]
+	log.Printf("uid: %v, username: %v", uid, username)
 	return utils.RestfulResponse(2000, "user has logout!", map[string]string{})
 }
 

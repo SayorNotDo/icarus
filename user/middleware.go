@@ -1,6 +1,7 @@
 package user
 
 import (
+	"icarus/utils"
 	"time"
 
 	"github.com/iris-contrib/middleware/jwt"
@@ -13,6 +14,14 @@ var (
 )
 
 var Signer = jwt.New(jwt.Config{
+	ErrorHandler: func(ctx iris.Context, err error) {
+		if err == nil {
+			return
+		}
+		ctx.StopExecution()
+		ctx.StatusCode(iris.StatusUnauthorized)
+		ctx.JSON(utils.RestfulResponse(501, err.Error(), map[string]string{}))
+	},
 	// get jwt from Authorization in Request Header
 	Extractor: jwt.FromAuthHeader,
 
@@ -46,8 +55,5 @@ func AuthenticatedHandler(ctx iris.Context) {
 		Signer.Config.ErrorHandler(ctx, err)
 		return
 	}
-	token := ctx.Values().Get("jwt").(*jwt.Token)
-
-	res := token.Claims.(jwt.MapClaims)
-	ctx.Writef("%v", res)
+	ctx.Next()
 }
