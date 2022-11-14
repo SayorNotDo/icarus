@@ -1,44 +1,31 @@
 package user
 
 import (
+	"icarus/utils"
+	"log"
+
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/context"
 	"github.com/kataras/iris/v12/mvc"
-	"github.com/kataras/iris/v12/sessions"
-	"icarus/utils"
-	"log"
 )
 
 type Controller struct {
 	Ctx     iris.Context
 	Service UserService
-	Session *sessions.Session
 }
 
-const userIDKey = "UID"
+// func (c *Controller) getCurrentUserID() int64 {
+// 	userID := c.Session.GetInt64Default(userIDKey, 0)
+// 	return userID
+// }
 
-func (c *Controller) getCurrentUserID() int64 {
-	userID := c.Session.GetInt64Default(userIDKey, 0)
-	return userID
-}
+// func (c *Controller) isLoggedIn() bool {
+// 	return c.getCurrentUserID() > 0
+// }
 
-func (c *Controller) isLoggedIn() bool {
-	return c.getCurrentUserID() > 0
-}
-
-func (c *Controller) logout() {
-	c.Session.Destroy()
-}
-
-//// Get v1/api/user
-//func (c *Controller) Get() (results []User) {
-//	return c.Service.GetAll()
-//}
-
-//// GetBy v1/api/user/{uid:int64}
-//func (c *Controller) GetBy(uid int64) (u User, found bool) {
-//	return c.Service.GetByID(uid) // throw 404 if not found
-//}
+// func (c *Controller) logout() {
+// 	c.Session.Destroy()
+// }
 
 // PostRegister v1/api/user/register
 func (c *Controller) PostRegister() mvc.Result {
@@ -53,20 +40,19 @@ func (c *Controller) PostRegister() mvc.Result {
 	if err != nil {
 		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
-	c.Session.Set(userIDKey, u.UID)
 	return utils.RestfulResponse(2000, "user register success!", u)
 }
 
 // GetRegister v1/api/user/register
-func (c *Controller) GetRegister() mvc.Result {
-	if c.isLoggedIn() {
-		c.logout()
-	}
-	// redirect to register page
-	return mvc.Response{
-		Text: "Register Page",
-	}
-}
+// func (c *Controller) GetRegister() mvc.Result {
+// 	if c.isLoggedIn() {
+// 		c.logout()
+// 	}
+// 	// redirect to register page
+// 	return mvc.Response{
+// 		Text: "Register Page",
+// 	}
+// }
 
 // PostLogin v1/api/user/login
 func (c *Controller) PostLogin() mvc.Result {
@@ -80,7 +66,7 @@ func (c *Controller) PostLogin() mvc.Result {
 	if err != nil {
 		return utils.RestfulResponse(2001, err.Error(), map[string]string{})
 	}
-	return utils.RestfulResponse(2000, "login success!", map[string]string{"token": string(Token)})
+	return utils.RestfulResponse(2000, "login success!", map[string]string{"token": Token})
 }
 
 // PostLogout v1/api/user/logout
@@ -90,13 +76,20 @@ func (c *Controller) PostLogout() mvc.Result {
 
 // PutUpdate v1/api/user/update
 func (c *Controller) PutUpdate() mvc.Result {
-	var params map[string]interface{}
+	Authorization := c.Ctx.GetHeader("Authorization")
+	log.Printf("get Authorization parameter: %s", Authorization)
+	var params map[string]string
 	if err := c.Ctx.ReadJSON(&params); err != nil {
 		return utils.RestfulResponse(2000, err.Error(), map[string]string{})
 	}
 	log.Printf("json: %v", params)
+	if _, err := c.Service.Update(params); err != nil {
+		return mvc.Response{
+			Text: "update failed",
+		}
+	}
 	return mvc.Response{
-		Text: "Update success",
+		Text: "update success",
 	}
 }
 

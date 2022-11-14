@@ -3,7 +3,6 @@ package user
 import (
 	"icarus/database"
 	"log"
-	"sync"
 )
 
 // Query represent `Guest` and action of query.
@@ -12,7 +11,7 @@ type Query func(User) bool
 // UserRepository will process some user instance operation
 // interface of test
 type UserRepository interface {
-	InsertOrUpdate(user User) (updateUser User, err error)
+	Insert(user User) (updateUser User, err error)
 	Select(user User) (selectUser User, found bool)
 	//Exec(query Query, action Query, limit int, mode int) (ok bool)
 	//SelectMany(query Query, limit int) (results []User)
@@ -24,7 +23,7 @@ func NewUserRepository() UserRepository {
 }
 
 type userRepository struct {
-	mu sync.RWMutex
+	// mu sync.RWMutex
 }
 
 const (
@@ -57,7 +56,7 @@ const (
 //}
 
 func (r *userRepository) Select(user User) (u User, found bool) {
-	log.Println("Query User info from database.")
+	log.Println("Query User info from database")
 	result := database.Db.Model(&User{}).Where("username = ?", user.Username).First(&u)
 	log.Printf("Query Result: %v", result.Error)
 	if result.Error == nil {
@@ -74,7 +73,7 @@ func (r *userRepository) Select(user User) (u User, found bool) {
 //	return
 //}
 
-func (r *userRepository) InsertOrUpdate(user User) (updateUser User, err error) {
+func (r *userRepository) Insert(user User) (updateUser User, err error) {
 	uid := user.UID
 	log.Printf("get user'UID: %d ", uid)
 	// validate if the user is already registered
@@ -88,10 +87,8 @@ func (r *userRepository) InsertOrUpdate(user User) (updateUser User, err error) 
 		database.Db.Model(&User{}).Create(&user)
 		log.Println("create user success!")
 		return user, nil
-	} else {
-		log.Println("try to update user info")
-		return User{}, nil
 	}
+	return User{}, nil
 }
 
 func (r *userRepository) Delete(query Query, limit int) (deleted bool) {

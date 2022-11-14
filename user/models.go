@@ -1,8 +1,10 @@
 package user
 
 import (
-	"golang.org/x/crypto/bcrypt"
+	"log"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -48,13 +50,13 @@ type Serializer struct {
 	HashedPassword []byte    `json:"-"`
 }
 
-func (self User) Serializer() Serializer {
+func (u User) Serializer() Serializer {
 	return Serializer{
-		UID:            self.UID,
-		Username:       self.Username,
-		HashedPassword: self.HashedPassword,
-		JoinDate:       self.JoinDate,
-		LastLoginTime:  self.LastLoginTime,
+		UID:            u.UID,
+		Username:       u.Username,
+		HashedPassword: u.HashedPassword,
+		JoinDate:       u.JoinDate,
+		LastLoginTime:  u.LastLoginTime,
 	}
 }
 func GeneratePassword(password string) ([]byte, error) {
@@ -62,6 +64,7 @@ func GeneratePassword(password string) ([]byte, error) {
 }
 
 func ValidatePassword(password string, hashed []byte) (bool, error) {
+	log.Println("validate processing...")
 	if err := bcrypt.CompareHashAndPassword(hashed, []byte(password)); err != nil {
 		return false, err
 	}

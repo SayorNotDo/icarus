@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/kataras/iris/v12"
 	"icarus/database"
 	"icarus/router"
 	"icarus/user"
+
+	"github.com/kataras/iris/v12"
 )
 
 func init() {

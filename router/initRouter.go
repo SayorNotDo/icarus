@@ -8,6 +8,8 @@ import (
 
 func InitRouter() *iris.Application {
 	app := iris.New()
+	// CSRF := csrf.Protect([]byte("32-byte-long-auth-key"))
+	// app.Use(CSRF)
 	app.Use(recover.New())
 	app.Use(logger.New())
 

@@ -1,51 +1,53 @@
 package user
 
 import (
-	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/middleware/jwt"
 	"time"
+
+	"github.com/iris-contrib/middleware/jwt"
+	"github.com/kataras/iris/v12"
 )
 
 var (
-	secret     = []byte("signature_hmac_secret_shared_key")
-	encryption = []byte("signature_hmac_secret_shared_key")
+	secret = []byte("signature_hmac_secret_shared_key")
+	// encryption = []byte("signature_hmac_secret_shared_key")
 )
 
-type UserClaims struct {
-	Uid      int64  `json:"uid"`
-	Username string `json:"username"`
-}
+var Signer = jwt.New(jwt.Config{
+	// get jwt from Authorization in Request Header
+	Extractor: jwt.FromAuthHeader,
 
-var Signer *jwt.Signer
+	Expiration: true,
 
-func init() {
-	Signer = jwt.NewSigner(jwt.HS256, secret, 10*time.Minute)
+	ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
+		return secret, nil
+	},
 
-	// Enable payload encryption
-	Signer.WithEncryption(encryption, nil)
+	SigningMethod: jwt.SigningMethodHS256,
+})
 
-	verifier := jwt.NewVerifier(jwt.HS256, secret)
+func generateToken(username string, uid int64) (token string, err error) {
+	now := time.Now()
+	generateToken := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": username,
+		"uid":      uid,
+		"iat":      now.Unix(),
+		"exp":      now.Add(15 * time.Minute).Unix(),
+	})
 
-	verifier.WithDefaultBlocklist()
-	//verifyMiddleware := verifier.Verify(func() interface{} {
-	//	return new(fooClaims)
-	//})
-}
-
-func generateToken(signer *jwt.Signer, username string, uid int64) (token []byte, err error) {
-	claims := UserClaims{Username: username, Uid: uid}
-	token, err = signer.Sign(claims)
+	tokenString, err := generateToken.SignedString(secret)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return
+	return tokenString, nil
 }
 
-func protected(ctx iris.Context) {
-	claims := jwt.Get(ctx).(*UserClaims)
-	standardClaims := jwt.GetVerifiedToken(ctx).StandardClaims
-	expiresAtString := standardClaims.ExpiresAt().Format(ctx.Application().ConfigurationReadOnly().GetTimeFormat())
-	timeLeft := standardClaims.Timeleft()
+func AuthenticatedHandler(ctx iris.Context) {
+	if err := Signer.CheckJWT(ctx); err != nil {
+		Signer.Config.ErrorHandler(ctx, err)
+		return
+	}
+	token := ctx.Values().Get("jwt").(*jwt.Token)
 
-	ctx.Writef("foo=%s\nexpires at: %s\ntime left:%s\n", claims.Username, expiresAtString, timeLeft)
+	res := token.Claims.(jwt.MapClaims)
+	ctx.Writef("%v", res)
 }
