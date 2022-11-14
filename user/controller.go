@@ -44,20 +44,12 @@ func (c *Controller) logout() {
 func (c *Controller) PostRegister() mvc.Result {
 	// get post data form json
 	// username, password, email, phone
-	var params map[string]interface{}
+	var params map[string]string
 	// return while read json occur error
 	if err := c.Ctx.ReadJSON(&params); err != nil {
 		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
-	username := params["username"]
-	password := params["password"]
-	email := params["email"]
-	phone := params["phone"]
-	u, err := c.Service.Create(password.(string), User{
-		Username: username.(string),
-		Email:    email.(string),
-		Phone:    phone.(string),
-	})
+	u, err := c.Service.Create(params)
 	if err != nil {
 		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
@@ -70,6 +62,7 @@ func (c *Controller) GetRegister() mvc.Result {
 	if c.isLoggedIn() {
 		c.logout()
 	}
+	// redirect to register page
 	return mvc.Response{
 		Text: "Register Page",
 	}

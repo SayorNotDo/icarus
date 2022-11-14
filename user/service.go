@@ -7,7 +7,7 @@ import (
 
 // UserService will deal with `user` model CRUD operation
 type UserService interface {
-	Create(password string, user User) (User, error)
+	Create(params map[string]string) (User, error)
 	Update(user User) (User, error)
 	Login(username, password string) (token []byte, err error)
 	//GetAll() []User
@@ -28,13 +28,21 @@ type userService struct {
 // Create insert a new user
 // the password is the client-typed password
 // it will be hashed before the insertion to our repository.
-func (u *userService) Create(password string, user User) (User, error) {
-	log.Printf("user: %v", user)
-	log.Printf("uid: %d, password: %s, username: %s", user.UID, password, user.Username)
-	if user.UID > 0 || password == "" || user.Username == "" {
+func (u *userService) Create(params map[string]string) (User, error) {
+	username := params["username"]
+	password := params["password"]
+	email := params["email"]
+	phone := params["phone"]
+	log.Printf("password: %s, username: %s", password, username)
+	if password == "" || username == "" {
 		return User{}, errors.New("unable to create this user")
 	}
 	log.Println("validate if the user is already registered.")
+	user := User{
+		Username: username,
+		Email:    email,
+		Phone:    phone,
+	}
 	_, found := u.repo.Select(user)
 	log.Printf("validate result: %v", found)
 	if found == true {
