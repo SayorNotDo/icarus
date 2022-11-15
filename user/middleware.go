@@ -31,7 +31,7 @@ var Signer = jwt.New(jwt.Config{
 	SigningMethod: jwt.SigningMethodHS256,
 })
 
-func generateToken(username string, uid int64) (token string, err error) {
+func generateAccessToken(username string, uid int64) (token string, err error) {
 	now := time.Now()
 	generateToken := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": username,
@@ -41,10 +41,15 @@ func generateToken(username string, uid int64) (token string, err error) {
 	})
 
 	tokenString, err := generateToken.SignedString(secret)
-	if err != nil {
-		return "", err
-	}
-	return tokenString, nil
+	return tokenString, err
+}
+
+func generateRefreshToken(token string) (refreshToken string, err error) {
+	generateToken := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"token": token,
+	})
+	refreshTokenString, err := generateToken.SignedString(secret)
+	return refreshTokenString, err
 }
 
 func AuthenticatedHandler(ctx iris.Context) {

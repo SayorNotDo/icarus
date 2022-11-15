@@ -63,11 +63,11 @@ func (c *Controller) PostLogin() mvc.Result {
 	}
 	username := params["username"]
 	password := params["password"]
-	Token, err := c.Service.Login(username.(string), password.(string))
+	Token, refreshToken, err := c.Service.Login(username.(string), password.(string))
 	if err != nil {
 		return utils.RestfulResponse(2001, err.Error(), map[string]string{})
 	}
-	return utils.RestfulResponse(2000, "login success!", map[string]string{"token": Token})
+	return utils.RestfulResponse(2000, "login success!", map[string]string{"token": Token, "refreshToken": refreshToken})
 }
 
 // PostLogout v1/api/user/logout
@@ -77,6 +77,7 @@ func (c *Controller) PostLogout() mvc.Result {
 	uid := res["uid"]
 	username := res["username"]
 	log.Printf("uid: %v, username: %v", uid, username)
+
 	return utils.RestfulResponse(2000, "user has logout!", map[string]string{})
 }
 

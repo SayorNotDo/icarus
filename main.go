@@ -1,9 +1,11 @@
 package main
 
 import (
-	"icarus/database"
 	"icarus/router"
 	"icarus/user"
+
+	database "icarus/database/mariadb"
+	_ "icarus/database/redis"
 
 	"github.com/kataras/iris/v12"
 )

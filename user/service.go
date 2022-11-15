@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	redismanage "icarus/database/redis"
 	"log"
 )
 
@@ -9,7 +10,7 @@ import (
 type UserService interface {
 	Create(params map[string]string) (User, error)
 	Update(params map[string]string) (User, error)
-	Login(username, password string) (token string, err error)
+	Login(username, password string) (token, refreshToken string, err error)
 	//GetAll() []User
 	//GetByID(uid int64) (User, bool)
 	//DeleteByID(uid int64) bool
@@ -70,17 +71,25 @@ func (u *userService) Update(params map[string]string) (User, error) {
 	return User{}, nil
 }
 
-func (u *userService) Login(username, password string) (token string, err error) {
+func (u *userService) Login(username, password string) (token, refreshToken string, err error) {
 	user, found := u.repo.Select(User{Username: username})
 	if !found {
-		return "", errors.New("username or password is wrong")
+		return "", "", errors.New("username or password is wrong")
 	}
 	res, _ := ValidatePassword(password, user.HashedPassword)
 	if res {
-		token, err := generateToken(user.Username, user.UID)
-		return token, err
+		token, err := generateAccessToken(user.Username, user.UID)
+		if err == nil {
+			if refreshToken, err := generateRefreshToken(token); err == nil {
+				conn := redismanage.Pool.Get()
+				defer conn.Close()
+				conn.Do("SET", token, "EX", 60*5)
+				conn.Do("SET", refreshToken, "EX", 60*60*24*7)
+				return token, refreshToken, err
+			}
+		}
 	}
-	return "", errors.New("username or password is wrong")
+	return "", "", errors.New("username or password is wrong")
 }
 
 //func (u *userService) GetAll() []User {

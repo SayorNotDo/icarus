@@ -1,7 +1,7 @@
 package user
 
 import (
-	"icarus/database"
+	database "icarus/database/mariadb"
 	"log"
 )
 
