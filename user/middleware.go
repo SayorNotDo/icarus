@@ -1,7 +1,6 @@
 package user
 
 import (
-	"icarus/utils"
 	"time"
 
 	"github.com/iris-contrib/middleware/jwt"
@@ -18,9 +17,7 @@ var Signer = jwt.New(jwt.Config{
 		if err == nil {
 			return
 		}
-		ctx.StopExecution()
-		ctx.StatusCode(iris.StatusUnauthorized)
-		ctx.JSON(utils.RestfulResponse(501, err.Error(), map[string]string{}))
+		ctx.Writef("Authorization: %v", err.Error())
 	},
 	// get jwt from Authorization in Request Header
 	Extractor: jwt.FromAuthHeader,
