@@ -2,18 +2,23 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	redismanage "icarus/database/redis"
 	"log"
+
+	"github.com/golang-jwt/jwt"
 )
 
 // UserService will deal with `user` model CRUD operation
 type UserService interface {
 	Create(params map[string]string) (User, error)
-	Update(params map[string]string) (User, error)
+	Update(user User, params map[string]interface{}) (User, error)
 	Login(username, password string) (token, refreshToken string, err error)
+	Logout(params map[string]interface{}) (err error)
+	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, err error)
 	//GetAll() []User
 	//GetByID(uid int64) (User, bool)
-	//DeleteByID(uid int64) bool
+	DeleteByID(uid int64) bool
 }
 
 func NewUserService(repo UserRepository) UserService {
@@ -60,14 +65,16 @@ func (u *userService) Create(params map[string]string) (User, error) {
 	return u.repo.Insert(user)
 }
 
-func (u *userService) Update(params map[string]string) (User, error) {
-	log.Println("try to update user info")
-	chineseName := params["chinese_name"]
-	employeeId := params["employee_id"]
-	position := params["position"]
-	department := params["department"]
-	phone := params["phone"]
-	log.Printf("chinese_name: %s, employee_id: %s, position: %s, department: %s, phone: %s", chineseName, employeeId, position, department, phone)
+func (u *userService) Update(user User, params map[string]interface{}) (User, error) {
+	if _, found := u.repo.Select(user); !found {
+		return User{}, errors.New("user is not exist")
+	}
+	if err := userValidate(params); err != nil {
+		return User{}, err
+	}
+	if err := u.repo.Updates(user, params); err != nil {
+		return User{}, err
+	}
 	return User{}, nil
 }
 
@@ -81,10 +88,13 @@ func (u *userService) Login(username, password string) (token, refreshToken stri
 		token, err := generateAccessToken(user.Username, user.UID)
 		if err == nil {
 			if refreshToken, err := generateRefreshToken(token); err == nil {
+				// refresh token store in redis
 				conn := redismanage.Pool.Get()
 				defer conn.Close()
-				conn.Do("SET", token, "EX", 60*5)
-				conn.Do("SET", refreshToken, "EX", 60*60*24*7)
+				// conn.Do("SET", fmt.Sprintf("%s:%s", username, "accesstoken"), token, "EX", 60*5)
+				conn.Do("SET", fmt.Sprintf("%s:%s", username, "refreshToken"), refreshToken, "EX", 60*60*24*7)
+				// update refreshToken in mariadb
+				u.repo.Updates(user, map[string]interface{}{"refresh_token": refreshToken})
 				return token, refreshToken, err
 			}
 		}
@@ -92,20 +102,38 @@ func (u *userService) Login(username, password string) (token, refreshToken stri
 	return "", "", errors.New("username or password is wrong")
 }
 
-//func (u *userService) GetAll() []User {
-//	return u.repo.SelectMany(func(_ User) bool {
-//		return true
-//	}, -1)
-//}
-//
-//func (u *userService) GetByID(uid int64) (User, bool) {
-//	return u.repo.Select(func(s User) bool {
-//		return s.UID == uid
-//	})
-//}
-//
-//func (u userService) DeleteByID(uid int64) bool {
-//	return u.repo.Delete(func(s User) bool {
-//		return s.UID == uid
-//	}, 1)
-//}
+func (u *userService) Logout(params map[string]interface{}) (err error) {
+	log.Println("implement me")
+	user := User{Username: params["username"].(string)}
+	err = u.repo.Updates(user, params)
+	return
+}
+
+func (u *userService) Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, err error) {
+	parseToken, err := jwt.Parse(oldToken, func(t *jwt.Token) (interface{}, error) { return secret, nil })
+	if err != nil && err.Error() != "Token is expired" {
+		return "", "", err
+	}
+	userClaims := parseToken.Claims.(jwt.MapClaims)
+	conn := redismanage.Pool.Get()
+	defer conn.Close()
+	result, err := redismanage.RedisString(conn.Do("GET", fmt.Sprintf("%s:%s", userClaims["username"], "refreshToken")))
+	if err != nil || oldRefreshToken != result {
+		return "", "", errors.New("refreshToken is invalid")
+	}
+	selectUser, found := u.repo.Select(User{Username: userClaims["username"].(string), RefreshToken: result})
+	if found {
+		token, err = generateAccessToken(selectUser.Username, selectUser.UID)
+		if err != nil {
+			log.Println("Error generateAccessToken...")
+			return "", "", errors.New("generate token error")
+		}
+		return token, oldRefreshToken, nil
+	}
+	return "", "", errors.New("authenticate error")
+}
+
+func (u *userService) DeleteByID(uid int64) bool {
+	log.Println("_________________________debug____________________")
+	return false
+}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/iris-contrib/middleware/jwt"
 	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/context"
 	"github.com/kataras/iris/v12/mvc"
 )
 
@@ -24,10 +23,6 @@ type Controller struct {
 // 	return c.getCurrentUserID() > 0
 // }
 
-// func (c *Controller) logout() {
-// 	c.Session.Destroy()
-// }
-
 // PostRegister v1/api/user/register
 func (c *Controller) PostRegister() mvc.Result {
 	// get post data form json
@@ -41,7 +36,7 @@ func (c *Controller) PostRegister() mvc.Result {
 	if err != nil {
 		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
-	return utils.RestfulResponse(2000, "user register success!", u)
+	return utils.RestfulResponse(2001, "user register success!", u)
 }
 
 // GetRegister v1/api/user/register
@@ -67,46 +62,60 @@ func (c *Controller) PostLogin() mvc.Result {
 	if err != nil {
 		return utils.RestfulResponse(2001, err.Error(), map[string]string{})
 	}
-	return utils.RestfulResponse(2000, "login success!", map[string]string{"token": Token, "refreshToken": refreshToken})
+	return utils.RestfulResponse(2000, "login success!",
+		iris.Map{
+			"token":        Token,
+			"refreshToken": refreshToken,
+			"tokenType":    "Bearer",
+		})
 }
 
 // PostLogout v1/api/user/logout
 func (c *Controller) PostLogout() mvc.Result {
-	token := c.Ctx.Values().Get("jwt").(*jwt.Token)
-	res := token.Claims.(jwt.MapClaims)
-	uid := res["uid"]
-	username := res["username"]
+	uid, username := parseUserinfo(c.Ctx)
 	log.Printf("uid: %v, username: %v", uid, username)
-
+	params := map[string]interface{}{
+		"username":      username,
+		"refresh_token": ""}
+	c.Service.Logout(params)
 	return utils.RestfulResponse(2000, "user has logout!", map[string]string{})
 }
 
-// PutUpdate v1/api/user/update
-func (c *Controller) PutUpdate() mvc.Result {
-	Authorization := c.Ctx.GetHeader("Authorization")
-	log.Printf("get Authorization parameter: %s", Authorization)
+func (c *Controller) PostAuthenticate() mvc.Result {
 	var params map[string]string
 	if err := c.Ctx.ReadJSON(&params); err != nil {
 		return utils.RestfulResponse(2000, err.Error(), map[string]string{})
 	}
-	log.Printf("json: %v", params)
-	if _, err := c.Service.Update(params); err != nil {
-		return mvc.Response{
-			Text: "update failed",
-		}
+	token, err := jwt.FromAuthHeader(c.Ctx)
+	if err != nil {
+		return utils.RestfulResponse(2000, err.Error(), map[string]string{})
 	}
-	return mvc.Response{
-		Text: "update success",
+	newToken, newRefreshToken, err := c.Service.Authenticate(token, params["refreshToken"])
+	if err != nil {
+		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
+	return utils.RestfulResponse(2000, "authenticate succeess", iris.Map{"token": newToken, "refreshToken": newRefreshToken, "tokenType": "Bearer"})
 }
 
-func (u User) IsValid() bool {
-	return u.UID > 0
-}
-func (u User) Dispatch(ctx context.Context) {
-	if !u.IsValid() {
-		ctx.NotFound()
-		return
+// PutUpdate v1/api/user/update
+func (c *Controller) PutUpdate() mvc.Result {
+	uid, username := parseUserinfo(c.Ctx)
+	log.Printf("%v, %v", uid, username)
+	var params map[string]interface{}
+	if err := c.Ctx.ReadJSON(&params); err != nil {
+		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
-	ctx.JSON(u, context.JSON{Indent: " "})
+	log.Printf("json: %v", params)
+	if _, err := c.Service.Update(User{Username: username, UID: uid}, params); err != nil {
+		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
+	}
+	return utils.RestfulResponse(2000, "update success", map[string]string{})
+}
+
+func (c *Controller) DeleteBy(id int64) mvc.Result {
+	uid, username := parseUserinfo(c.Ctx)
+	log.Printf("%v, %v", uid, username)
+	isDelete := c.Service.DeleteByID(id)
+	log.Println(isDelete)
+	return utils.RestfulResponse(2000, "delete success", map[string]string{})
 }

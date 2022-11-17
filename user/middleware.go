@@ -17,7 +17,11 @@ var Signer = jwt.New(jwt.Config{
 		if err == nil {
 			return
 		}
-		ctx.Writef("Authorization: %v", err.Error())
+		ctx.JSON(iris.Map{
+			"code":    4001,
+			"message": err.Error(),
+			"data":    map[string]string{},
+		})
 	},
 	// get jwt from Authorization in Request Header
 	Extractor: jwt.FromAuthHeader,
@@ -37,7 +41,7 @@ func generateAccessToken(username string, uid int64) (token string, err error) {
 		"username": username,
 		"uid":      uid,
 		"iat":      now.Unix(),
-		"exp":      now.Add(15 * time.Minute).Unix(),
+		"exp":      now.Add(15 * time.Hour).Unix(),
 	})
 
 	tokenString, err := generateToken.SignedString(secret)
@@ -58,4 +62,12 @@ func AuthenticatedHandler(ctx iris.Context) {
 		return
 	}
 	ctx.Next()
+}
+
+func parseUserinfo(ctx iris.Context) (uid int64, username string) {
+	token := ctx.Values().Get("jwt").(*jwt.Token)
+	res := token.Claims.(jwt.MapClaims)
+	uid = int64(res["uid"].(float64))
+	username = res["username"].(string)
+	return
 }

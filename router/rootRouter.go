@@ -22,6 +22,8 @@ func isNotTargetPath(ctx iris.Context) bool {
 		return false
 	case RoutePrefix + "/user/login":
 		return false
+	case RoutePrefix + "/user/authenticate":
+		return false
 	default:
 		return true
 	}
