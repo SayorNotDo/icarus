@@ -3,17 +3,21 @@ package router
 import (
 	"icarus/user"
 
+	"github.com/kataras/iris/v12/versioning"
+
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/mvc"
 )
 
-const RoutePrefix = "/v1/api"
+const RoutePrefix = "/api/v1"
 
 func RootRouter(app *iris.Application) {
 	userParty := app.Party(RoutePrefix + "/user")
-	// userParty.Use(user.AuthenticatedHandler)
+	projectParty := app.Party(RoutePrefix + "/project")
 	mvc.Configure(userParty, UserRouter)
+	mvc.Configure(projectParty, ProjectRouter)
 	app.UseRouter(iris.NewConditionalHandler(isNotTargetPath, user.AuthenticatedHandler))
+	app.Use(versioning.FromQuery("version", "1.0.0"))
 }
 
 func isNotTargetPath(ctx iris.Context) bool {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"icarus/project"
 	"icarus/router"
 	"icarus/user"
 
@@ -15,7 +16,7 @@ func init() {
 	database.Db.Migrator().CurrentDatabase()
 
 	// Migrate: run auto migration for given models, will only add missing field, won't delete/change current data
-	err := database.Db.AutoMigrate(&user.User{}, &user.Department{})
+	err := database.Db.AutoMigrate(&user.User{}, &user.Department{}, &project.Project{}, &project.ProjectMember{})
 	if err != nil {
 		return
 	}

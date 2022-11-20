@@ -1,6 +1,7 @@
 package router
 
 import (
+	"icarus/project"
 	"icarus/user"
 
 	"github.com/kataras/iris/v12/mvc"
@@ -8,11 +9,19 @@ import (
 
 func UserRouter(app *mvc.Application) {
 	//app.Router.Use(user.BasicAuth)
-	// Use memory data in datasource to build Users database (Debug mode?)
 	repo := user.NewUserRepository()
 	userService := user.NewUserService(repo)
 	app.Register(
 		userService,
 	)
 	app.Handle(new(user.Controller))
+}
+
+func ProjectRouter(app *mvc.Application) {
+	repo := project.NewProjectRepository()
+	projectService := project.NewProjectService(repo)
+	app.Register(
+		projectService,
+	)
+	app.Handle(new(project.Controller))
 }

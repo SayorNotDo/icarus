@@ -64,7 +64,7 @@ func (c *Controller) PostLogin() mvc.Result {
 	}
 	return utils.RestfulResponse(2000, "login success!",
 		iris.Map{
-			"token":        Token,
+			"accessToken":  Token,
 			"refreshToken": refreshToken,
 			"tokenType":    "Bearer",
 		})
@@ -94,7 +94,7 @@ func (c *Controller) PostAuthenticate() mvc.Result {
 	if err != nil {
 		return utils.RestfulResponse(5000, err.Error(), map[string]string{})
 	}
-	return utils.RestfulResponse(2000, "authenticate succeess", iris.Map{"token": newToken, "refreshToken": newRefreshToken, "tokenType": "Bearer"})
+	return utils.RestfulResponse(2000, "authenticate succeess", iris.Map{"accessToken": newToken, "refreshToken": newRefreshToken, "tokenType": "Bearer"})
 }
 
 // PutUpdate v1/api/user/update
@@ -112,7 +112,7 @@ func (c *Controller) PutUpdate() mvc.Result {
 	return utils.RestfulResponse(2000, "update success", map[string]string{})
 }
 
-func (c *Controller) DeleteBy(id int64) mvc.Result {
+func (c *Controller) DeleteBy(id uint32) mvc.Result {
 	uid, username := parseUserinfo(c.Ctx)
 	log.Printf("%v, %v", uid, username)
 	isDelete := c.Service.DeleteByID(id)

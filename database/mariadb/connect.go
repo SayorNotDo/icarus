@@ -56,6 +56,10 @@ func init() {
 	// ------------------------------connection poll setting------------------------------
 	sqlDB, err := Db.DB()
 
+	if err != nil {
+		log.Fatalf("Database error %v", err.Error())
+	}
+
 	// SetMaxIdleConns: maximum of idle connection pool
 	sqlDB.SetMaxIdleConns(10)
 

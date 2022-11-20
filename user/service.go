@@ -18,7 +18,7 @@ type UserService interface {
 	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, err error)
 	//GetAll() []User
 	//GetByID(uid int64) (User, bool)
-	DeleteByID(uid int64) bool
+	DeleteByID(uid uint32) bool
 }
 
 func NewUserService(repo UserRepository) UserService {
@@ -133,7 +133,7 @@ func (u *userService) Authenticate(oldToken, oldRefreshToken string) (token, ref
 	return "", "", errors.New("authenticate error")
 }
 
-func (u *userService) DeleteByID(uid int64) bool {
+func (u *userService) DeleteByID(uid uint32) bool {
 	log.Println("_________________________debug____________________")
 	return false
 }

@@ -17,7 +17,7 @@ type UserRepository interface {
 	Select(user User) (selectUser User, found bool)
 	Updates(user User, updateInfo map[string]interface{}) (err error)
 	//Exec(query Query, action Query, limit int, mode int) (ok bool)
-	Delete(uid int64) (deleted bool)
+	Delete(uid uint32) (deleted bool)
 }
 
 func NewUserRepository() UserRepository {
@@ -33,7 +33,7 @@ const (
 	ReadWriteMode
 )
 
-func (r *userRepository) Delete(uid int64) (deleted bool) {
+func (r *userRepository) Delete(uid uint32) (deleted bool) {
 	log.Println(uid)
 	return false
 }
