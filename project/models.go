@@ -2,33 +2,33 @@ package project
 
 import (
 	"errors"
-	"icarus/utils"
 	"reflect"
+	"time"
 )
 
 type Project struct {
-	PID            uint16           `json:"p_id" gorm:"primaryKey; autoIncrement"`
-	CreateTime     *utils.LocalTime `json:"create_time" gorm:"autoCreateTime"`
-	LastUpdateTime *utils.LocalTime `json:"last_update_time" gorm:"autoUpdateTime:milli"`
-	Name           string           `json:"name" gorm:"unique; not null; type:varchar(256)"`
-	Designation    string           `json:"designation" gorm:"unique; type:varchar(256)"`
-	Rank           uint8            `json:"rank" gorm:"default:1"`
-	Description    string           `json:"description" gorm:"type:text"`
-	Status         uint8            `json:"status" gorm:"default:1"`
-	Reference      string           `json:"reference" gorm:"type:text"`
-	StartTime      *utils.LocalTime `json:"start_time"`
-	FinishTime     *utils.LocalTime `json:"finish_time"`
+	PID            uint16    `json:"p_id" gorm:"primaryKey; autoIncrement"`
+	CreateTime     time.Time `json:"create_time" gorm:"autoCreateTime:milli"`
+	LastUpdateTime time.Time `json:"last_update_time" gorm:"autoUpdateTime:milli"`
+	Name           string    `json:"name" gorm:"unique; not null; type:varchar(256)"`
+	Designation    string    `json:"designation" gorm:"unique; type:varchar(256)"`
+	Rank           uint8     `json:"rank" gorm:"default:1"`
+	Description    string    `json:"description" gorm:"type:text"`
+	Status         uint8     `json:"status" gorm:"default:1"`
+	Reference      string    `json:"reference" gorm:"type:text"`
+	StartTime      time.Time `json:"start_time"`
+	FinishTime     time.Time `json:"finish_time"`
 }
 
 type ProjectMember struct {
-	PID            uint16           `json:"p_id" gorm:"index:pro_member"`
-	UID            uint32           `json:"uid" gorm:"index:pro_member"`
-	CreateTime     *utils.LocalTime `json:"create_time" gorm:"autoCreateTime"`
-	LastUpdateTime *utils.LocalTime `json:"last_update_time" gorm:"autoUpdateTime:milli"`
-	Character      string           `json:"character"`
-	JoinDate       *utils.LocalTime `json:"join_date"`
-	LeaveDate      *utils.LocalTime `json:"leave_date"`
-	Status         bool             `json:"status" gorm:"default:1"`
+	PID            uint16    `json:"p_id" gorm:"index:pro_member"`
+	UID            uint32    `json:"uid" gorm:"index:pro_member"`
+	CreateTime     time.Time `json:"create_time" gorm:"autoCreateTime:milli"`
+	LastUpdateTime time.Time `json:"last_update_time" gorm:"autoUpdateTime:milli"`
+	Character      string    `json:"character"`
+	JoinDate       time.Time `json:"join_date"`
+	LeaveDate      time.Time `json:"leave_date"`
+	Status         bool      `json:"status" gorm:"default:1"`
 }
 
 type Tabler interface {
@@ -43,18 +43,18 @@ func (ProjectMember) TableName() string {
 	return "project_member"
 }
 
-func projectValidate(params map[string]interface{}) (err error) {
+func projectValidate(params map[string]interface{}) (map[string]interface{}, error) {
 	for key, param := range params {
 		switch key {
 		case "designation", "name", "description", "reference":
 			if reflect.TypeOf(param).Kind() != reflect.String {
-				return errors.New("parameter error")
+				return nil, errors.New("parameter error")
 			}
 		default:
 			delete(params, key)
 		}
 	}
-	return nil
+	return params, nil
 }
 
 // func projectMemberValidate(params map[string]interface{}) (err error) {

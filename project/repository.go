@@ -19,8 +19,10 @@ type projectRepository struct {
 }
 
 func (r *projectRepository) Select(queryInfo map[string]interface{}) (p Project, found bool) {
+	log.Println("++++++++++++++++++++++++++++++++++++++++++++++++")
+	log.Printf("Select Project: %v", queryInfo)
+	log.Println("++++++++++++++++++++++++++++++++++++++++++++++++")
 	result := database.Db.Model(&Project{}).Where(queryInfo).First(&p)
-	log.Println("________________________________")
 	log.Println(p)
 	if result.Error == nil {
 		found = true
@@ -37,14 +39,14 @@ func (r *projectRepository) Insert(project Project) (Project, error) {
 }
 
 func (r *projectRepository) Update(project Project, updateInfo map[string]interface{}) (updateProject Project, err error) {
-	if result := database.Db.Model(&project).First(&updateProject); result.Error != nil {
+	result := database.Db.Model(&project).Updates(updateInfo)
+	if result.Error != nil {
 		return Project{}, result.Error
 	}
-	log.Println("___________________________")
-	log.Println(updateProject)
-	tx := database.Db.Model(&updateProject).Updates(updateInfo)
+	tx := database.Db.Model(&Project{}).Where("p_id = ?", project.PID).First(&updateProject)
 	if tx.Error != nil {
-		return Project{}, nil
+		return Project{}, tx.Error
 	}
+	log.Println(updateProject)
 	return
 }

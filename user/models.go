@@ -2,30 +2,30 @@ package user
 
 import (
 	"fmt"
-	"icarus/utils"
 	"log"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	UID            uint32           `json:"uid" gorm:"primaryKey; autoIncrement"`
-	Username       string           `json:"username" gorm:"unique; not null; type:varchar(32)"`
-	HashedPassword []byte           `json:"hashed_password"`
-	ChineseName    string           `json:"chinese_name" gorm:"type:varchar(32)"`
-	CreateTime     *utils.LocalTime `json:"create_time" gorm:"autoCreateTime"`
-	LastUpdateTime *utils.LocalTime `json:"last_update_time" gorm:"autoUpdateTIme:milli"`
-	RoleId         uint8            `json:"role_id" gorm:"default:5"`
-	EmployeeId     string           `json:"employee_id" gorm:"type:varchar(32)"`
-	Position       string           `json:"position" gorm:"type:varchar(256)"`
-	Email          string           `json:"email" gorm:"type:varchar(256)" validate:"email"`
-	Phone          string           `json:"phone" gorm:"type:varchar(32)"`
-	JoinDate       *utils.LocalTime `json:"join_date"`
-	LeaveDate      *utils.LocalTime `json:"leave_date"`
-	LastLoginTime  *utils.LocalTime `json:"last_login_time"`
-	Status         bool             `json:"status" gorm:"default:1"`
-	Department     string           `json:"department" gorm:"type:varchar(256)"`
-	RefreshToken   string           `json:"refresh_token" gorm:"type:text"`
+	UID            uint32    `json:"uid" gorm:"primaryKey; autoIncrement"`
+	Username       string    `json:"username" gorm:"unique; not null; type:varchar(32)"`
+	HashedPassword []byte    `json:"hashed_password"`
+	ChineseName    string    `json:"chinese_name" gorm:"type:varchar(32)"`
+	CreateTime     time.Time `json:"create_time" gorm:"autoCreateTime"`
+	LastUpdateTime time.Time `json:"last_update_time" gorm:"autoUpdateTIme:milli"`
+	RoleId         uint8     `json:"role_id" gorm:"default:5"`
+	EmployeeId     string    `json:"employee_id" gorm:"type:varchar(32)"`
+	Position       string    `json:"position" gorm:"type:varchar(256)"`
+	Email          string    `json:"email" gorm:"type:varchar(256)" validate:"email"`
+	Phone          string    `json:"phone" gorm:"type:varchar(32)"`
+	JoinDate       time.Time `json:"join_date"`
+	LeaveDate      time.Time `json:"leave_date"`
+	LastLoginTime  time.Time `json:"last_login_time"`
+	Status         bool      `json:"status" gorm:"default:1"`
+	Department     string    `json:"department" gorm:"type:varchar(256)"`
+	RefreshToken   string    `json:"refresh_token" gorm:"type:text"`
 }
 
 type Tabler interface {
@@ -48,11 +48,11 @@ func (Department) TableName() string {
 }
 
 type Serializer struct {
-	UID            uint32           `json:"uid"`
-	JoinDate       *utils.LocalTime `json:"join_date" gorm:"autoCreateTime"`
-	LastLoginTime  *utils.LocalTime `json:"last_login_time" gorm:"autoUpdateTime:milli"`
-	Username       string           `json:"username"`
-	HashedPassword []byte           `json:"-"`
+	UID            uint32    `json:"uid"`
+	JoinDate       time.Time `json:"join_date" gorm:"autoCreateTime"`
+	LastLoginTime  time.Time `json:"last_login_time" gorm:"autoUpdateTime:milli"`
+	Username       string    `json:"username"`
+	HashedPassword []byte    `json:"-"`
 }
 
 func (u User) Serializer() Serializer {
