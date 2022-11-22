@@ -84,6 +84,9 @@ func (p *projectService) Update(params map[string]interface{}) (Project, error) 
 	if err := projectValidate(params); err != nil {
 		return Project{}, err
 	}
+	if params["name"] == "" || params["name"] == nil {
+		return Project{}, errors.New("parameter name can not be null")
+	}
 	// log.Println("_____________________________________")
 	// log.Println(project.Name)
 	// updatePID := project.PID

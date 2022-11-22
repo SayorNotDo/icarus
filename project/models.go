@@ -3,7 +3,6 @@ package project
 import (
 	"errors"
 	"icarus/utils"
-	"log"
 	"reflect"
 )
 
@@ -46,11 +45,10 @@ func (ProjectMember) TableName() string {
 
 func projectValidate(params map[string]interface{}) (err error) {
 	for key, param := range params {
-		log.Printf("key: %v param type: %v", key, reflect.TypeOf(param))
 		switch key {
 		case "designation", "name", "description", "reference":
-			if _, ok := param.(string); !ok {
-				return errors.New("parameter type error")
+			if reflect.TypeOf(param).Kind() != reflect.String {
+				return errors.New("parameter error")
 			}
 		default:
 			delete(params, key)
