@@ -3,14 +3,13 @@ package main
 import (
 	database "icarus/database/mariadb"
 	"icarus/project"
-	"log"
 
-	// "icarus/router"
+	_ "icarus/database/redis"
+	"icarus/router"
 	"icarus/task"
 	"icarus/user"
-	// database "icarus/database/mariadb"
-	// _ "icarus/database/redis"
-	// "github.com/kataras/iris/v12"
+
+	"github.com/kataras/iris/v12"
 	// icarus_grpc "icarus/message/grpc"
 )
 
@@ -27,17 +26,14 @@ func init() {
 
 func main() {
 
-	// app := router.InitRouter()
+	app := router.InitRouter()
 
-	// // Register Controller
-	// router.RootRouter(app)
+	// Register Controller
+	router.RootRouter(app)
 
-	// // run server
-	// err := app.Run(iris.Addr(":8080"), iris.WithConfiguration(iris.TOML("./conf/iris_dev.tml")))
-	// if err != nil {
-	// 	return
-	// }
-
-	// icarus_grpc.ExampleClient()
-	log.Println("----------------------------------------------------------------")
+	// run server
+	err := app.Run(iris.Addr(":8080"), iris.WithConfiguration(iris.TOML("./conf/iris_dev.tml")))
+	if err != nil {
+		return
+	}
 }
