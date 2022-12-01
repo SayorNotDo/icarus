@@ -31,6 +31,15 @@ type ProjectMember struct {
 	Status         bool      `json:"status" gorm:"default:1"`
 }
 
+type TestPlan struct {
+	TPID        uint32 `json:"tp_id" gorm:"index:t_task"`
+	TID         uint32 `json:"t_id" gorm:"index: t_task"`
+	PID         uint16 `json:"p_id"`
+	Description string `json:"description" gorm:"type:text"`
+	Reference   string `json:"reference" gorm:"type:text"`
+	Status      uint8  `json:"status" gorm:"default:1"`
+}
+
 type Tabler interface {
 	TableName() string
 }
@@ -41,6 +50,10 @@ func (Project) TableName() string {
 
 func (ProjectMember) TableName() string {
 	return "project_member"
+}
+
+func (TestPlan) TableName() string {
+	return "test_plan"
 }
 
 func projectValidate(params map[string]interface{}) (map[string]interface{}, error) {

@@ -1,7 +1,9 @@
 package project
 
 import (
+	"icarus/user"
 	"icarus/utils"
+	"log"
 
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/mvc"
@@ -24,7 +26,6 @@ func (c *Controller) PostCreate() mvc.Result {
 	return utils.RestfulResponse(code, "Create Success", result)
 }
 
-// TODO: Update interface complete
 func (c *Controller) PutUpdate() mvc.Result {
 	params := make(map[string]interface{})
 	if err := c.Ctx.ReadJSON(&params); err != nil {
@@ -47,6 +48,9 @@ func (c *Controller) GetBy(id uint16) mvc.Result {
 
 // TODO: Get all projects interface complete
 func (c *Controller) Get() mvc.Result {
+	uid, username := user.ParseUserinfo(c.Ctx)
+	// TODO: check if username have authority to get all projects
+	log.Printf("uid: %v, username: %s", uid, username)
 	return utils.RestfulResponse(2000, "", map[string]string{})
 }
 

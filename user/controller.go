@@ -72,7 +72,7 @@ func (c *Controller) PostLogin() mvc.Result {
 
 // PostLogout v1/api/user/logout
 func (c *Controller) PostLogout() mvc.Result {
-	uid, username := parseUserinfo(c.Ctx)
+	uid, username := ParseUserinfo(c.Ctx)
 	log.Printf("uid: %v, username: %v", uid, username)
 	params := map[string]interface{}{
 		"username":      username,
@@ -99,7 +99,7 @@ func (c *Controller) PostAuthenticate() mvc.Result {
 
 // PutUpdate v1/api/user/update
 func (c *Controller) PutUpdate() mvc.Result {
-	uid, username := parseUserinfo(c.Ctx)
+	uid, username := ParseUserinfo(c.Ctx)
 	log.Printf("%v, %v", uid, username)
 	var params map[string]interface{}
 	if err := c.Ctx.ReadJSON(&params); err != nil {
@@ -113,7 +113,7 @@ func (c *Controller) PutUpdate() mvc.Result {
 }
 
 func (c *Controller) DeleteBy(id uint32) mvc.Result {
-	uid, username := parseUserinfo(c.Ctx)
+	uid, username := ParseUserinfo(c.Ctx)
 	log.Printf("%v, %v", uid, username)
 	isDelete := c.Service.DeleteByID(id)
 	log.Println(isDelete)

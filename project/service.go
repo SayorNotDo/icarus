@@ -10,6 +10,7 @@ import (
 type ProjectService interface {
 	Create(params map[string]interface{}) (Project, int16, error)
 	GetbyID(pid uint16) (Project, int16, error)
+	GetAll(uid uint32, username string) ([]Project, error)
 	Update(params map[string]interface{}) (Project, int16, error)
 }
 
@@ -104,4 +105,11 @@ func (p *projectService) Update(params map[string]interface{}) (Project, int16, 
 		return Project{}, iris.StatusInternalServerError, errors.New(iris.StatusText(iris.StatusInternalServerError))
 	}
 	return updateProject, iris.StatusOK, nil
+}
+
+func (p *projectService) GetAll(uid uint32, username string) ([]Project, error) {
+	if _, found := p.repo.Select(map[string]interface{}{"uid": uid, "username": username}); !found {
+		return []Project{}, nil
+	}
+	return []Project{}, nil
 }

@@ -1,14 +1,17 @@
 package main
 
 import (
-	"icarus/project"
-	"icarus/router"
-	"icarus/user"
-
 	database "icarus/database/mariadb"
-	_ "icarus/database/redis"
+	"icarus/project"
+	"log"
 
-	"github.com/kataras/iris/v12"
+	// "icarus/router"
+	"icarus/task"
+	"icarus/user"
+	// database "icarus/database/mariadb"
+	// _ "icarus/database/redis"
+	// "github.com/kataras/iris/v12"
+	// icarus_grpc "icarus/message/grpc"
 )
 
 func init() {
@@ -16,7 +19,7 @@ func init() {
 	database.Db.Migrator().CurrentDatabase()
 
 	// Migrate: run auto migration for given models, will only add missing field, won't delete/change current data
-	err := database.Db.AutoMigrate(&user.User{}, &user.Department{}, &project.Project{}, &project.ProjectMember{})
+	err := database.Db.AutoMigrate(&user.User{}, &user.Department{}, &project.Project{}, &project.ProjectMember{}, &project.TestPlan{}, &task.Task{}, &task.TaskContent{})
 	if err != nil {
 		return
 	}
@@ -24,14 +27,17 @@ func init() {
 
 func main() {
 
-	app := router.InitRouter()
+	// app := router.InitRouter()
 
-	// Register Controller
-	router.RootRouter(app)
+	// // Register Controller
+	// router.RootRouter(app)
 
-	// run server
-	err := app.Run(iris.Addr(":8080"), iris.WithConfiguration(iris.TOML("./conf/iris_dev.tml")))
-	if err != nil {
-		return
-	}
+	// // run server
+	// err := app.Run(iris.Addr(":8080"), iris.WithConfiguration(iris.TOML("./conf/iris_dev.tml")))
+	// if err != nil {
+	// 	return
+	// }
+
+	// icarus_grpc.ExampleClient()
+	log.Println("----------------------------------------------------------------")
 }

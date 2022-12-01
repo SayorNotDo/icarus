@@ -15,3 +15,14 @@ func RestfulResponse(code int16, message string, data interface{}) mvc.Result {
 		},
 	}
 }
+
+func CollectionJsonResponse(code int16, message string, data interface{}) mvc.Result {
+	return mvc.Response{
+		ContentType: "application/vnd.collection+json",
+		Object: iris.Map{
+			"code":    code,
+			"message": message,
+			"data":    data,
+		},
+	}
+}

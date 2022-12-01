@@ -64,10 +64,10 @@ func AuthenticatedHandler(ctx iris.Context) {
 	ctx.Next()
 }
 
-func parseUserinfo(ctx iris.Context) (uid uint32, username string) {
+func ParseUserinfo(ctx iris.Context) (uid uint32, username string) {
 	token := ctx.Values().Get("jwt").(*jwt.Token)
 	res := token.Claims.(jwt.MapClaims)
-	uid = res["uid"].(uint32)
+	uid = uint32(res["uid"].(float64))
 	username = res["username"].(string)
 	return
 }
