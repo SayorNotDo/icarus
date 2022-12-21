@@ -9,7 +9,7 @@ import (
 	"github.com/kataras/iris/v12/mvc"
 )
 
-const RoutePrefix = "/api/v1"
+const RoutePrefix = "/v1/api"
 
 func RootRouter(app *iris.Application) {
 	userParty := app.Party(RoutePrefix + "/user")

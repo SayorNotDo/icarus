@@ -23,6 +23,11 @@ type Controller struct {
 // 	return c.getCurrentUserID() > 0
 // }
 
+// GetUserBy v1/api/user/<string:username>
+func (c *Controller) GetUserBy(username string) (User, error) {
+	panic("not implemented")
+}
+
 // PostRegister v1/api/user/register
 func (c *Controller) PostRegister() mvc.Result {
 	// get post data form json
@@ -54,15 +59,15 @@ func (c *Controller) PostRegister() mvc.Result {
 func (c *Controller) PostLogin() mvc.Result {
 	var params map[string]interface{}
 	if err := c.Ctx.ReadJSON(&params); err != nil {
-		return utils.RestfulResponse(2000, err.Error(), map[string]string{})
+		return utils.RestfulResponse(200, err.Error(), map[string]string{})
 	}
 	username := params["username"]
 	password := params["password"]
 	Token, refreshToken, err := c.Service.Login(username.(string), password.(string))
 	if err != nil {
-		return utils.RestfulResponse(2001, err.Error(), map[string]string{})
+		return utils.RestfulResponse(200, err.Error(), map[string]string{})
 	}
-	return utils.RestfulResponse(2000, "login success!",
+	return utils.RestfulResponse(200, "login success!",
 		iris.Map{
 			"accessToken":  Token,
 			"refreshToken": refreshToken,
