@@ -40,6 +40,7 @@ require (
 	github.com/flosch/pongo2/v4 v4.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/garyburd/redigo v1.6.4 // indirect
+	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect

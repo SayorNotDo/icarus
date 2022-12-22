@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	database "icarus/database/mariadb"
 	"icarus/project"
 
@@ -20,20 +21,21 @@ func init() {
 	// Migrate: run auto migration for given models, will only add missing field, won't delete/change current data
 	err := database.Db.AutoMigrate(&user.User{}, &user.Department{}, &project.Project{}, &project.ProjectMember{}, &project.TestPlan{}, &task.Task{}, &task.TaskContent{})
 	if err != nil {
+		fmt.Println("error:", err)
 		return
 	}
 }
 
 func main() {
-
-	app := router.InitRouter()
-
-	// Register Controller
-	router.RootRouter(app)
+	// Initialize & Register
+	app := router.Initialize()
+	router.Router(app)
 
 	// run server
-	err := app.Run(iris.Addr(":8080"), iris.WithConfiguration(iris.TOML("./conf/iris_dev.tml")))
+	config := iris.WithConfiguration(iris.TOML("./conf/iris_dev.tml"))
+	err := app.Run(iris.Addr(":6180"), config, iris.WithoutInterruptHandler, iris.WithLowercaseRouting, iris.WithPathIntelligence)
 	if err != nil {
+		fmt.Println("error: ", err)
 		return
 	}
 }
