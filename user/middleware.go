@@ -1,6 +1,8 @@
 package user
 
 import (
+	"icarus/static"
+	"strings"
 	"time"
 
 	"github.com/iris-contrib/middleware/jwt"
@@ -57,11 +59,25 @@ func generateRefreshToken(token string) (refreshToken string, err error) {
 }
 
 func AuthenticatedHandler(ctx iris.Context) {
-	if err := Signer.CheckJWT(ctx); err != nil {
-		Signer.Config.ErrorHandler(ctx, err)
-		return
+	if res := exceptAuthenticate(ctx.Path()); res != false {
+		if err := Signer.CheckJWT(ctx); err != nil {
+			Signer.Config.ErrorHandler(ctx, err)
+			return
+		}
 	}
 	ctx.Next()
+}
+
+func exceptAuthenticate(ctxPath string) bool {
+	relativePath := strings.TrimPrefix(ctxPath, static.RoutePrefix)
+	switch relativePath {
+	case "/user/register":
+		return false
+	case "/user/login":
+		return false
+	default:
+		return true
+	}
 }
 
 func ParseUserinfo(ctx iris.Context) (uid uint32, username string) {

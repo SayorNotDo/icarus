@@ -7,6 +7,7 @@ import (
 	_ "icarus/docs"
 	"icarus/exception"
 	"icarus/project"
+	"icarus/static"
 	"icarus/user"
 	"icarus/utils"
 	"log"
@@ -25,8 +26,6 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/mvc"
 )
-
-const RoutePrefix = "/v1/api"
 
 func Initialize() *iris.Application {
 	// sentry handler initialize
@@ -106,11 +105,11 @@ func Router(app *iris.Application) {
 	app.OnErrorCode(iris.StatusNotFound, exception.NotFound)
 	app.OnErrorCode(iris.StatusInternalServerError, exception.InternalServerError)
 	app.UseGlobal(user.AuthenticatedHandler)
-	removeMiddlewareHandler(app)
-	userParty := app.Party(RoutePrefix + "/user")
-	projectParty := app.Party(RoutePrefix + "/project")
+	userParty := app.Party(static.RoutePrefix + "/user")
+	projectParty := app.Party(static.RoutePrefix + "/project")
 	mvc.Configure(userParty, User)
 	mvc.Configure(projectParty, Project)
+	removeMiddlewareHandler(app)
 }
 
 func index(ctx iris.Context) {
