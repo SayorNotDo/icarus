@@ -16,8 +16,8 @@ type UserRepository interface {
 	Insert(user User) (insertUser User, err error)
 	Select(user User) (selectUser User, found bool)
 	Updates(user User, updateInfo map[string]interface{}) (err error)
-	//Exec(query Query, action Query, limit int, mode int) (ok bool)
 	Delete(uid uint32) (deleted bool)
+	//Exec(query Query, action Query, limit int, mode int) (ok bool)
 }
 
 func NewUserRepository() UserRepository {

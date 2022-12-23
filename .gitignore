@@ -3,3 +3,4 @@ icarus
 .idea
 datasource
 .fleet
+icarus-server.log

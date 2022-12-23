@@ -4,25 +4,38 @@ go 1.19
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/kataras/iris/v12 v12.2.0-beta6
+	github.com/kataras/iris/v12 v12.2.0-beta6.0.20221105124545-5b80c297dccd
 	golang.org/x/crypto v0.0.0-20220919173607-35f4265a4bc0
 	gorm.io/driver/mysql v1.4.3
 	gorm.io/gorm v1.24.0
 )
 
 require (
+	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/PuerkitoBio/purell v1.1.1 // indirect
+	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
+	github.com/go-openapi/jsonpointer v0.19.5 // indirect
+	github.com/go-openapi/jsonreference v0.19.6 // indirect
+	github.com/go-openapi/spec v0.20.4 // indirect
+	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/iris-contrib/swagger v0.0.0-20221110100830-8382955a2917 // indirect
+	github.com/iris-contrib/swagger/v12 v12.2.0-alpha // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/newrelic/go-agent v3.20.2+incompatible // indirect
+	github.com/newrelic/go-agent/v3 v3.20.0 // indirect
+	github.com/swaggo/swag v1.8.7 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 require (
-	github.com/BurntSushi/toml v1.2.0 // indirect
+	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/CloudyKit/jet/v6 v6.1.0 // indirect
 	github.com/Joker/jade v1.1.3 // indirect
@@ -58,6 +71,7 @@ require (
 	github.com/iris-contrib/go.uuid v2.0.0+incompatible // indirect
 	github.com/iris-contrib/middleware/csrf v0.0.0-20221109225525-f806663b83a0 // indirect
 	github.com/iris-contrib/middleware/jwt v0.0.0-20221109225525-f806663b83a0 // indirect
+	github.com/iris-contrib/middleware/newrelic v0.0.0-20221109225525-f806663b83a0
 	github.com/iris-contrib/schema v0.0.6 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -77,12 +91,12 @@ require (
 	github.com/kataras/rizla v0.1.1 // indirect
 	github.com/kataras/sitemap v0.0.6 // indirect
 	github.com/kataras/tunnel v0.0.4 // indirect
-	github.com/klauspost/compress v1.15.11 // indirect
-	github.com/mailgun/raymond/v2 v2.0.47 // indirect
+	github.com/klauspost/compress v1.15.12 // indirect
+	github.com/mailgun/raymond/v2 v2.0.48 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mediocregopher/radix/v3 v3.8.0 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.21 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nats-io/nats.go v1.16.0 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
