@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/kataras/iris/v12 v12.2.0-beta6.0.20221105124545-5b80c297dccd
-	golang.org/x/crypto v0.0.0-20220919173607-35f4265a4bc0
+	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be
 	gorm.io/driver/mysql v1.4.3
 	gorm.io/gorm v1.24.0
 )
@@ -14,6 +14,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
+	github.com/getsentry/sentry-go v0.16.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
@@ -22,6 +23,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/iris-contrib/middleware/cors v0.0.0-20221109225525-f806663b83a0 // indirect
 	github.com/iris-contrib/swagger v0.0.0-20221110100830-8382955a2917 // indirect
 	github.com/iris-contrib/swagger/v12 v12.2.0-alpha // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -105,7 +107,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/schollz/closestmatch v2.1.0+incompatible // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/tdewolff/minify/v2 v2.12.4 // indirect
 	github.com/tdewolff/parse/v2 v2.6.4 // indirect
 	github.com/trinodb/trino-go-client v0.306.0 // indirect

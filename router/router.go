@@ -2,12 +2,15 @@ package router
 
 import (
 	"context"
+	"github.com/getsentry/sentry-go"
+	sentryiris "github.com/getsentry/sentry-go/iris"
 	_ "icarus/docs"
 	"icarus/exception"
 	"icarus/project"
 	"icarus/user"
 	"icarus/utils"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -26,6 +29,22 @@ import (
 const RoutePrefix = "/v1/api"
 
 func Initialize() *iris.Application {
+	// sentry handler initialize
+	_ = sentry.Init(sentry.ClientOptions{
+		Dsn: "",
+		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+			if hint.Context != nil {
+				if req, ok := hint.Context.Value(sentry.RequestContextKey).(*http.Request); ok {
+					log.Println(req)
+				}
+			}
+			log.Println(event)
+			return event
+		},
+		Debug:            true,
+		AttachStacktrace: true,
+	})
+
 	relicApp, err := newrelic.NewApplication(
 		newrelic.ConfigAppName("Icarus relic"),
 		newrelic.ConfigLicense(utils.GetEnv("NEW_RELIC_LICENSE_KEY", "862783809d684c3541dd3bc3cb33fe7e8173NRAL")),
@@ -36,10 +55,26 @@ func Initialize() *iris.Application {
 		os.Exit(1)
 	}
 	app := iris.New()
+	//CORS := cors.New(cors.Options{
+	//	AllowedOrigins:   []string{"*"},
+	//	AllowCredentials: true,
+	//})
+	//app.Use(CORS)
 	// CSRF := csrf.Protect([]byte("32-byte-long-auth-key"))
 	// app.Use(CSRF)
 	app.Use(recover.New())
 	app.Use(logger.New())
+
+	// use sentry handler
+	app.Use(sentryiris.New(sentryiris.Options{
+		Repanic: true,
+	}))
+	app.Use(func(ctx iris.Context) {
+		if hub := sentryiris.GetHubFromContext(ctx); hub != nil {
+			hub.Scope().SetTag("someRandomTag", "maybeYouNeedIt")
+		}
+		ctx.Next()
+	})
 
 	// monitor configuration
 	app.Use(nriris.New(relicApp))

@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 	database "icarus/database/mariadb"
-	"icarus/project"
-
 	_ "icarus/database/redis"
+	"icarus/project"
 	"icarus/router"
 	"icarus/task"
 	"icarus/user"
@@ -27,6 +26,7 @@ func init() {
 }
 
 func main() {
+
 	// Initialize & Register
 	app := router.Initialize()
 	router.Router(app)

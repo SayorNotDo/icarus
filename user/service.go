@@ -16,9 +16,9 @@ type UserService interface {
 	Login(username, password string) (token, refreshToken string, err error)
 	Logout(params map[string]interface{}) (err error)
 	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, err error)
+	DeleteByID(uid uint32) bool
 	//GetAll() []User
 	//GetByID(uid int64) (User, bool)
-	DeleteByID(uid uint32) bool
 }
 
 func NewUserService(repo UserRepository) UserService {
