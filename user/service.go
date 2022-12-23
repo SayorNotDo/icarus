@@ -3,6 +3,7 @@ package user
 import (
 	"errors"
 	"fmt"
+	"github.com/kataras/iris/v12"
 	redismanage "icarus/database/redis"
 	"log"
 
@@ -11,7 +12,7 @@ import (
 
 // UserService will deal with `user` model CRUD operation
 type UserService interface {
-	Create(params map[string]string) (User, error)
+	Create(params map[string]string) (User, Status)
 	Update(user User, params map[string]interface{}) (User, error)
 	Login(username, password string) (token, refreshToken string, err error)
 	Logout(params map[string]interface{}) (err error)
@@ -31,38 +32,61 @@ type userService struct {
 	repo UserRepository
 }
 
+type Status struct {
+	err        error
+	statusCode int16
+}
+
 // Create insert a new user
 // the password is the client-typed password
 // it will be hashed before the insertion to our repository.
-func (u *userService) Create(params map[string]string) (User, error) {
+func (u *userService) Create(params map[string]string) (User, Status) {
 	username := params["username"]
 	password := params["password"]
 	email := params["email"]
 	phone := params["phone"]
-	log.Printf("username: %s", username)
 	if password == "" || username == "" {
-		return User{}, errors.New("username or password is empty")
+		return User{},
+			Status{
+				err:        errors.New("username or password is empty"),
+				statusCode: iris.StatusBadRequest,
+			}
 	}
-	log.Println("validate if the user is already registered.")
-	user := User{
-		Username: username,
-		Email:    email,
-		Phone:    phone,
-	}
-	_, found := u.repo.Select(user)
-	log.Printf("validate result: %v", found)
-	if found {
-		return User{}, errors.New("user is already exist")
+	for key, val := range params {
+		if key == "password" {
+			continue
+		}
+		if queryResult := u.repo.Query(key, val); queryResult.UID != 0 {
+			return User{}, Status{
+				err:        errors.New(fmt.Sprintf("%s is already in used", key)),
+				statusCode: iris.StatusBadRequest,
+			}
+		}
 	}
 	hashed, err := GeneratePassword(password)
-	log.Printf("Get hashed password: %s", hashed)
 	if err != nil {
-		log.Println("generate password error!")
-		return User{}, err
+		return User{}, Status{
+			err:        err,
+			statusCode: iris.StatusInternalServerError,
+		}
 	}
-	user.HashedPassword = hashed
-	log.Printf("user's Info: %v", user)
-	return u.repo.Insert(user)
+	user := User{
+		Username:       username,
+		Email:          email,
+		Phone:          phone,
+		HashedPassword: hashed,
+	}
+	res, err := u.repo.Insert(user)
+	if err != nil {
+		return User{}, Status{
+			err:        err,
+			statusCode: iris.StatusInternalServerError,
+		}
+	}
+	return res, Status{
+		err:        err,
+		statusCode: iris.StatusCreated,
+	}
 }
 
 func (u *userService) Update(user User, params map[string]interface{}) (User, error) {

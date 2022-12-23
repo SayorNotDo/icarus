@@ -1,14 +1,13 @@
 package user
 
 import (
+	"errors"
+	"fmt"
 	database "icarus/database/mariadb"
 	"log"
 
 	"gorm.io/gorm"
 )
-
-// Query represent `Guest` and action of query.
-type Query func(User) bool
 
 // UserRepository will process some user instance operation
 // interface of test
@@ -17,6 +16,7 @@ type UserRepository interface {
 	Select(user User) (selectUser User, found bool)
 	Updates(user User, updateInfo map[string]interface{}) (err error)
 	Delete(uid uint32) (deleted bool)
+	Query(filed string, value interface{}) (user User)
 	//Exec(query Query, action Query, limit int, mode int) (ok bool)
 }
 
@@ -33,15 +33,19 @@ const (
 	ReadWriteMode
 )
 
+func (r *userRepository) Query(field string, value interface{}) (user User) {
+	database.Db.Model(&User{}).Where(fmt.Sprintf("%s = '%s'", field, value)).Find(&user)
+	return
+}
+
 func (r *userRepository) Delete(uid uint32) (deleted bool) {
 	log.Println(uid)
 	return false
 }
 
 func (r *userRepository) Select(user User) (u User, found bool) {
-	log.Println("Query User info from database")
 	result := database.Db.Model(&User{}).Where(&user).First(&u)
-	log.Printf("Query Result: %v", result.Error)
+	log.Printf("Result: %v", result.Error)
 	if result.Error == nil {
 		found = true
 	}
@@ -55,7 +59,7 @@ func (r *userRepository) Insert(user User) (insertUser User, err error) {
 		database.Db.Model(&User{}).Create(&user)
 		return user, nil
 	}
-	return User{}, nil
+	return User{}, errors.New("user create failed")
 }
 
 func (r *userRepository) Updates(user User, updateInfo map[string]interface{}) (err error) {

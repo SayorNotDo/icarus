@@ -23,7 +23,7 @@ type User struct {
 	JoinDate       time.Time `json:"join_date"`
 	LeaveDate      time.Time `json:"leave_date"`
 	LastLoginTime  time.Time `json:"last_login_time"`
-	Status         bool      `json:"status" gorm:"default:1"`
+	Status         bool      `json:"status" gorm:"default:true"`
 	Department     string    `json:"department" gorm:"type:varchar(256)"`
 	RefreshToken   string    `json:"refresh_token" gorm:"type:text"`
 }
