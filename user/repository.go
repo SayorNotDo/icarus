@@ -43,7 +43,6 @@ func (r *userRepository) Delete(uid uint32) (deleted bool) {
 
 func (r *userRepository) Select(user User) (u User, found bool) {
 	result := database.Db.Model(&User{}).Where(&user).First(&u)
-	log.Printf("Result: %v", result.Error)
 	if result.Error == nil {
 		found = true
 	}

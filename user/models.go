@@ -2,10 +2,7 @@ package user
 
 import (
 	"fmt"
-	"log"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -65,13 +62,6 @@ func (u User) Serializer() Serializer {
 	}
 }
 
-func ValidatePassword(password string, hashed []byte) (bool, error) {
-	log.Println("validate processing...")
-	if err := bcrypt.CompareHashAndPassword(hashed, []byte(password)); err != nil {
-		return false, err
-	}
-	return true, nil
-}
 func userValidate(params map[string]interface{}) (err error) {
 	for key, param := range params {
 		switch key {

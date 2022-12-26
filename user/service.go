@@ -3,21 +3,22 @@ package user
 import (
 	"errors"
 	"fmt"
+	"github.com/golang-jwt/jwt"
+	"github.com/gomodule/redigo/redis"
 	"github.com/kataras/iris/v12"
 	"golang.org/x/crypto/bcrypt"
 	redismanage "icarus/database/redis"
 	"log"
-
-	"github.com/golang-jwt/jwt"
+	"time"
 )
 
 // UserService will deal with `user` model CRUD operation
 type UserService interface {
 	Create(params map[string]string, hashedPassword []byte) Status
 	Update(user User, params map[string]interface{}) (User, error)
-	Login(username, password string) (token, refreshToken string, err error)
+	Login(username, password string) (token, refreshToken string, status Status)
 	Logout(params map[string]interface{}) (err error)
-	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, err error)
+	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, status Status)
 	DeleteByID(uid uint32) bool
 	//GetAll() []User
 	//GetByID(uid int64) (User, bool)
@@ -81,30 +82,41 @@ func (u *userService) Update(user User, params map[string]interface{}) (User, er
 	return User{}, nil
 }
 
-func (u *userService) Login(username, password string) (token, refreshToken string, err error) {
+func (u *userService) Login(username, password string) (accessToken, refreshToken string, status Status) {
 	user, found := u.repo.Select(User{Username: username})
 	if !found {
-		return "", "", errors.New("username or password is wrong")
-	}
-	res, _ := ValidatePassword(password, user.HashedPassword)
-	if res {
-		token, err := generateAccessToken(user.Username, user.UID)
-		if err == nil {
-			if refreshToken, err := generateRefreshToken(token); err == nil {
-				// refresh token store in redis
-				conn := redismanage.Pool.Get()
-				defer conn.Close()
-				// conn.Do("SET", fmt.Sprintf("%s:%s", username, "accesstoken"), token, "EX", 60*5)
-				conn.Do("SET", fmt.Sprintf("%s:%s", username, "refreshToken"), refreshToken, "EX", 60*60*24*7)
-				// update refreshToken in mariadb
-				u.repo.Updates(user, map[string]interface{}{"refresh_token": refreshToken})
-				return token, refreshToken, err
-			}
+		return "", "", Status{
+			err:        errors.New("username is not exist"),
+			statusCode: iris.StatusBadRequest,
 		}
 	}
-	return "", "", errors.New("username or password is wrong")
+	if ok, _ := validatePassword(password, user.HashedPassword); !ok {
+		return "", "", Status{
+			err:        errors.New("username or password is wrong"),
+			statusCode: iris.StatusBadRequest,
+		}
+	}
+	accessToken, refreshToken, err := generateToken(user.Username, user.UID)
+	if err != nil {
+		return "", "", Status{
+			err:        err,
+			statusCode: iris.StatusInternalServerError,
+		}
+	}
+	lastLoginTime := time.Now()
+	if err := u.repo.Updates(user, map[string]interface{}{"refresh_token": refreshToken, "last_login_time": lastLoginTime}); err != nil {
+		return "", "", Status{
+			err:        err,
+			statusCode: iris.StatusInternalServerError,
+		}
+	}
+	return accessToken, refreshToken, Status{
+		err:        nil,
+		statusCode: iris.StatusOK,
+	}
 }
 
+// Logout TODO: implement completely
 func (u *userService) Logout(params map[string]interface{}) (err error) {
 	log.Println("implement me")
 	user := User{Username: params["username"].(string)}
@@ -112,28 +124,53 @@ func (u *userService) Logout(params map[string]interface{}) (err error) {
 	return
 }
 
-func (u *userService) Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, err error) {
-	parseToken, err := jwt.Parse(oldToken, func(t *jwt.Token) (interface{}, error) { return secret, nil })
+func (u *userService) Authenticate(oldAccessToken, oldRefreshToken string) (accessToken, refreshToken string, status Status) {
+	parseToken, err := jwt.Parse(oldAccessToken, func(t *jwt.Token) (interface{}, error) { return secret, nil })
 	if err != nil && err.Error() != "Token is expired" {
-		return "", "", err
+		return "", "", Status{
+			err:        err,
+			statusCode: iris.StatusUnauthorized,
+		}
 	}
 	userClaims := parseToken.Claims.(jwt.MapClaims)
 	conn := redismanage.Pool.Get()
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		if err := conn.Close(); err != nil {
+			log.Println("get user credentials failed: ", err)
+		}
+	}(conn)
 	result, err := redismanage.RedisString(conn.Do("GET", fmt.Sprintf("%s:%s", userClaims["username"], "refreshToken")))
 	if err != nil || oldRefreshToken != result {
-		return "", "", errors.New("refreshToken is invalid")
-	}
-	selectUser, found := u.repo.Select(User{Username: userClaims["username"].(string), RefreshToken: result})
-	if found {
-		token, err = generateAccessToken(selectUser.Username, selectUser.UID)
-		if err != nil {
-			log.Println("Error generateAccessToken...")
-			return "", "", errors.New("generate token error")
+		return "", "", Status{
+			err:        errors.New("refreshToken is invalid"),
+			statusCode: iris.StatusUnauthorized,
 		}
-		return token, oldRefreshToken, nil
 	}
-	return "", "", errors.New("authenticate error")
+	user, found := u.repo.Select(User{Username: userClaims["username"].(string), RefreshToken: result})
+	if !found {
+		return "", "", Status{
+			err:        errors.New("authenticate error"),
+			statusCode: iris.StatusInternalServerError,
+		}
+	}
+	accessToken, refreshToken, err = generateToken(user.Username, user.UID)
+	if err != nil {
+		log.Println("error generate accessToken")
+		return "", "", Status{
+			err:        errors.New("accessToken generate error"),
+			statusCode: iris.StatusInternalServerError,
+		}
+	}
+	if err := u.repo.Updates(user, map[string]interface{}{"refresh_token": refreshToken}); err != nil {
+		return "", "", Status{
+			err:        err,
+			statusCode: iris.StatusInternalServerError,
+		}
+	}
+	return accessToken, oldRefreshToken, Status{
+		err:        nil,
+		statusCode: iris.StatusOK,
+	}
 }
 
 func (u *userService) DeleteByID(uid uint32) bool {
@@ -141,6 +178,35 @@ func (u *userService) DeleteByID(uid uint32) bool {
 	return false
 }
 
-func GeneratePassword(password string) ([]byte, error) {
+func generatePassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+}
+
+func validatePassword(password string, hashed []byte) (bool, error) {
+	log.Println("validate processing...")
+	if err := bcrypt.CompareHashAndPassword(hashed, []byte(password)); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func generateToken(username string, uid uint32) (accessToken, refreshToken string, err error) {
+	accessToken, err = generateAccessToken(username, uid)
+	if err != nil {
+		return "", "", err
+	}
+	refreshToken, err = generateRefreshToken(accessToken)
+	if err != nil {
+		return "", "", err
+	}
+	conn := redismanage.Pool.Get()
+	defer func(conn redis.Conn) {
+		if err := conn.Close(); err != nil {
+			log.Println("Redis client closed connection error")
+		}
+	}(conn)
+	if _, err := conn.Do("SET", fmt.Sprintf("%s:%s", username, "refreshToken"), refreshToken, "EX", 60*60*24*7); err != nil {
+		return "", "", err
+	}
+	return accessToken, refreshToken, nil
 }

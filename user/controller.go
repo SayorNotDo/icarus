@@ -14,25 +14,15 @@ type Controller struct {
 	Service UserService
 }
 
-// func (c *Controller) getCurrentUserID() int64 {
-// 	userID := c.Session.GetInt64Default(userIDKey, 0)
-// 	return userID
-// }
-
-// func (c *Controller) isLoggedIn() bool {
-// 	return c.getCurrentUserID() > 0
-// }
-
 // GetUserBy v1/api/user/<string:username>
 func (c *Controller) GetUserBy(username string) (User, error) {
 	panic("not implemented")
 }
 
-// PostRegister v1/api/user/register
 func (c *Controller) PostRegister() mvc.Result {
 	var params map[string]string
 	if err := c.Ctx.ReadJSON(&params); err != nil {
-		return Response(5000, err.Error(), map[string]string{})
+		return Response(500, err.Error(), map[string]string{})
 	}
 	if params["username"] == "" || params["password"] == "" {
 		return Response(iris.StatusBadRequest, "username or password can not be empty", map[string]string{})
@@ -41,7 +31,7 @@ func (c *Controller) PostRegister() mvc.Result {
 	} else if params["phone"] == "" {
 		return Response(iris.StatusBadRequest, "phone number can not be empty", map[string]string{})
 	}
-	hashed, err := GeneratePassword(params["password"])
+	hashed, err := generatePassword(params["password"])
 	if err != nil {
 		return Response(iris.StatusInternalServerError, "password hashed error", map[string]string{})
 	}
@@ -56,32 +46,21 @@ func (c *Controller) PostRegister() mvc.Result {
 	return Response(iris.StatusCreated, "register success!", map[string]string{})
 }
 
-// GetRegister v1/api/user/register
-// func (c *Controller) GetRegister() mvc.Result {
-// 	if c.isLoggedIn() {
-// 		c.logout()
-// 	}
-// 	// redirect to register page
-// 	return mvc.Response{
-// 		Text: "Register Page",
-// 	}
-// }
-
-// PostLogin v1/api/user/login
 func (c *Controller) PostLogin() mvc.Result {
-	var params map[string]interface{}
+	params := make(map[string]string)
 	if err := c.Ctx.ReadJSON(&params); err != nil {
-		return Response(200, err.Error(), map[string]string{})
+		return Response(iris.StatusInternalServerError, err.Error(), map[string]string{})
 	}
-	username := params["username"]
-	password := params["password"]
-	Token, refreshToken, err := c.Service.Login(username.(string), password.(string))
-	if err != nil {
-		return Response(200, err.Error(), map[string]string{})
+	if params["username"] == "" || params["password"] == "" {
+		return Response(iris.StatusBadRequest, "username or password can not be empty", map[string]string{})
 	}
-	return Response(200, "login success!",
+	accessToken, refreshToken, status := c.Service.Login(params["username"], params["password"])
+	if status.err != nil {
+		return Response(status.statusCode, status.err.Error(), map[string]string{})
+	}
+	return Response(iris.StatusOK, "login success!",
 		iris.Map{
-			"accessToken":  Token,
+			"accessToken":  accessToken,
 			"refreshToken": refreshToken,
 			"tokenType":    "Bearer",
 		})
@@ -107,11 +86,11 @@ func (c *Controller) PostAuthenticate() mvc.Result {
 	if err != nil {
 		return Response(2000, err.Error(), map[string]string{})
 	}
-	newToken, newRefreshToken, err := c.Service.Authenticate(token, params["refreshToken"])
-	if err != nil {
-		return Response(5000, err.Error(), map[string]string{})
+	newToken, newRefreshToken, status := c.Service.Authenticate(token, params["refreshToken"])
+	if status.err != nil {
+		return Response(status.statusCode, status.err.Error(), map[string]string{})
 	}
-	return Response(2000, "authenticate success", iris.Map{"accessToken": newToken, "refreshToken": newRefreshToken, "tokenType": "Bearer"})
+	return Response(iris.StatusOK, "authenticate success", iris.Map{"accessToken": newToken, "refreshToken": newRefreshToken, "tokenType": "Bearer"})
 }
 
 // PutUpdate v1/api/user/update
