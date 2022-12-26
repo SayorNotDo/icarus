@@ -65,10 +65,6 @@ func (u User) Serializer() Serializer {
 	}
 }
 
-func GeneratePassword(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-}
-
 func ValidatePassword(password string, hashed []byte) (bool, error) {
 	log.Println("validate processing...")
 	if err := bcrypt.CompareHashAndPassword(hashed, []byte(password)); err != nil {

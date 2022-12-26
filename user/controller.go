@@ -30,16 +30,28 @@ func (c *Controller) GetUserBy(username string) (User, error) {
 
 // PostRegister v1/api/user/register
 func (c *Controller) PostRegister() mvc.Result {
-	// get post data form json
-	// username, password, email, phone
 	var params map[string]string
-	// return while read json occur error
 	if err := c.Ctx.ReadJSON(&params); err != nil {
 		return Response(5000, err.Error(), map[string]string{})
 	}
-	if _, status := c.Service.Create(params); status.err != nil {
+	if params["username"] == "" || params["password"] == "" {
+		return Response(iris.StatusBadRequest, "username or password can not be empty", map[string]string{})
+	} else if params["email"] == "" {
+		return Response(iris.StatusBadRequest, "email can not be empty", map[string]string{})
+	} else if params["phone"] == "" {
+		return Response(iris.StatusBadRequest, "phone number can not be empty", map[string]string{})
+	}
+	hashed, err := GeneratePassword(params["password"])
+	if err != nil {
+		return Response(iris.StatusInternalServerError, "password hashed error", map[string]string{})
+	}
+	createInfo := map[string]string{
+		"username": params["username"],
+		"email":    params["email"],
+		"phone":    params["phone"],
+	}
+	if status := c.Service.Create(createInfo, hashed); status.err != nil {
 		return Response(status.statusCode, status.err.Error(), map[string]string{})
-
 	}
 	return Response(iris.StatusCreated, "register success!", map[string]string{})
 }

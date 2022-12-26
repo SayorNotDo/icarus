@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"golang.org/x/crypto/bcrypt"
 	redismanage "icarus/database/redis"
 	"log"
 
@@ -12,7 +13,7 @@ import (
 
 // UserService will deal with `user` model CRUD operation
 type UserService interface {
-	Create(params map[string]string) (User, Status)
+	Create(params map[string]string, hashedPassword []byte) Status
 	Update(user User, params map[string]interface{}) (User, error)
 	Login(username, password string) (token, refreshToken string, err error)
 	Logout(params map[string]interface{}) (err error)
@@ -40,51 +41,29 @@ type Status struct {
 // Create insert a new user
 // the password is the client-typed password
 // it will be hashed before the insertion to our repository.
-func (u *userService) Create(params map[string]string) (User, Status) {
-	username := params["username"]
-	password := params["password"]
-	email := params["email"]
-	phone := params["phone"]
-	if password == "" || username == "" {
-		return User{},
-			Status{
-				err:        errors.New("username or password is empty"),
-				statusCode: iris.StatusBadRequest,
-			}
-	}
+func (u *userService) Create(params map[string]string, hashedPassword []byte) Status {
 	for key, val := range params {
-		if key == "password" {
-			continue
-		}
-		if queryResult := u.repo.Query(key, val); queryResult.UID != 0 {
-			return User{}, Status{
+		if queryResult := u.repo.QueryByField(key, val); queryResult.UID != 0 {
+			return Status{
 				err:        errors.New(fmt.Sprintf("%s is already in used", key)),
 				statusCode: iris.StatusBadRequest,
 			}
 		}
 	}
-	hashed, err := GeneratePassword(password)
-	if err != nil {
-		return User{}, Status{
-			err:        err,
-			statusCode: iris.StatusInternalServerError,
-		}
-	}
 	user := User{
-		Username:       username,
-		Email:          email,
-		Phone:          phone,
-		HashedPassword: hashed,
+		Username:       params["username"],
+		Email:          params["email"],
+		Phone:          params["phone"],
+		HashedPassword: hashedPassword,
 	}
-	res, err := u.repo.Insert(user)
-	if err != nil {
-		return User{}, Status{
+	if _, err := u.repo.Insert(user); err != nil {
+		return Status{
 			err:        err,
 			statusCode: iris.StatusInternalServerError,
 		}
 	}
-	return res, Status{
-		err:        err,
+	return Status{
+		err:        nil,
 		statusCode: iris.StatusCreated,
 	}
 }
@@ -160,4 +139,8 @@ func (u *userService) Authenticate(oldToken, oldRefreshToken string) (token, ref
 func (u *userService) DeleteByID(uid uint32) bool {
 	log.Println("_________________________debug____________________")
 	return false
+}
+
+func GeneratePassword(password string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	database "icarus/database/mariadb"
 	"log"
-
-	"gorm.io/gorm"
 )
 
 // UserRepository will process some user instance operation
@@ -16,7 +14,7 @@ type UserRepository interface {
 	Select(user User) (selectUser User, found bool)
 	Updates(user User, updateInfo map[string]interface{}) (err error)
 	Delete(uid uint32) (deleted bool)
-	Query(filed string, value interface{}) (user User)
+	QueryByField(filed string, value interface{}) (user User)
 	//Exec(query Query, action Query, limit int, mode int) (ok bool)
 }
 
@@ -33,7 +31,7 @@ const (
 	ReadWriteMode
 )
 
-func (r *userRepository) Query(field string, value interface{}) (user User) {
+func (r *userRepository) QueryByField(field string, value interface{}) (user User) {
 	database.Db.Model(&User{}).Where(fmt.Sprintf("%s = '%s'", field, value)).Find(&user)
 	return
 }
@@ -68,9 +66,5 @@ func (r *userRepository) Updates(user User, updateInfo map[string]interface{}) (
 	if tx.Error != nil {
 		return tx.Error
 	}
-	return
-}
-
-func (u *User) BeforeUpdate(tx *gorm.DB) (err error) {
 	return
 }
