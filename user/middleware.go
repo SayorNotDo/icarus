@@ -20,7 +20,7 @@ var Signer = jwt.New(jwt.Config{
 			return
 		}
 		ctx.JSON(iris.Map{
-			"code":    4001,
+			"code":    401,
 			"message": err.Error(),
 			"data":    map[string]string{},
 		})
@@ -58,6 +58,19 @@ func generateRefreshToken(token string) (refreshToken string, err error) {
 	return refreshTokenString, err
 }
 
+func authorizeToken(username string, uid uint32) (token string, err error) {
+	now := time.Now()
+	generateToken := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": username,
+		"x-mode":   true,
+		"uid":      uid,
+		"iat":      now.Unix(),
+		"exp":      now.Add(30 * 24 * time.Hour).Unix(),
+	})
+	tokenString, err := generateToken.SignedString(secret)
+	return tokenString, err
+}
+
 func AuthenticatedHandler(ctx iris.Context) {
 	if res := exceptAuthenticate(ctx.Path()); res != false {
 		if err := Signer.CheckJWT(ctx); err != nil {
@@ -74,6 +87,8 @@ func exceptAuthenticate(ctxPath string) bool {
 	case "/user/register":
 		return false
 	case "/user/login":
+		return false
+	case "/user/authorize":
 		return false
 	default:
 		return true

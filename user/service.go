@@ -19,9 +19,9 @@ type UserService interface {
 	Login(username, password string) (token, refreshToken string, status Status)
 	Logout(params map[string]interface{}) (err error)
 	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, status Status)
+	Authorize(username, password string) (authorizeToken string, status Status)
+	GetUserInfo(uid uint32, username string) (map[string]interface{}, bool)
 	DeleteByID(uid uint32) bool
-	//GetAll() []User
-	//GetByID(uid int64) (User, bool)
 }
 
 func NewUserService(repo UserRepository) UserService {
@@ -37,6 +37,26 @@ type userService struct {
 type Status struct {
 	err        error
 	statusCode int16
+}
+
+func (u *userService) GetUserInfo(uid uint32, username string) (map[string]interface{}, bool) {
+	user, found := u.repo.Select(User{Username: username, UID: uid})
+	if !found {
+		return map[string]interface{}{}, false
+	}
+	userInfo := map[string]interface{}{
+		"Username":    user.Username,
+		"Uid":         user.UID,
+		"Email":       user.Email,
+		"ChineseName": user.ChineseName,
+		"RoleId":      user.RoleId,
+		"EmployeeId":  user.EmployeeId,
+		"JoinDate":    user.JoinDate,
+		"Position":    user.Position,
+		"Phone":       user.Phone,
+		"Department":  user.Department,
+	}
+	return userInfo, true
 }
 
 // Create insert a new user
@@ -86,7 +106,7 @@ func (u *userService) Login(username, password string) (accessToken, refreshToke
 	user, found := u.repo.Select(User{Username: username})
 	if !found {
 		return "", "", Status{
-			err:        errors.New("username is not exist"),
+			err:        errors.New("user is not exist"),
 			statusCode: iris.StatusBadRequest,
 		}
 	}
@@ -173,6 +193,33 @@ func (u *userService) Authenticate(oldAccessToken, oldRefreshToken string) (acce
 	}
 }
 
+func (u *userService) Authorize(username, password string) (token string, status Status) {
+	user, found := u.repo.Select(User{Username: username})
+	if !found {
+		return "", Status{
+			err:        errors.New("user is not exist"),
+			statusCode: iris.StatusBadRequest,
+		}
+	}
+	if ok, _ := validatePassword(password, user.HashedPassword); !ok {
+		return "", Status{
+			err:        errors.New("username or password is wrong"),
+			statusCode: iris.StatusBadRequest,
+		}
+	}
+	token, err := authorizeToken(user.Username, user.UID)
+	if err != nil {
+		return "", Status{
+			err:        err,
+			statusCode: iris.StatusInternalServerError,
+		}
+	}
+	return token, Status{
+		err:        nil,
+		statusCode: iris.StatusOK,
+	}
+}
+
 func (u *userService) DeleteByID(uid uint32) bool {
 	log.Println("_________________________debug____________________")
 	return false
@@ -209,4 +256,8 @@ func generateToken(username string, uid uint32) (accessToken, refreshToken strin
 		return "", "", err
 	}
 	return accessToken, refreshToken, nil
+}
+
+func validateAdministrator(uid uint32) bool {
+	return false
 }

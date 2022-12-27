@@ -14,9 +14,14 @@ type Controller struct {
 	Service UserService
 }
 
-// GetUserBy v1/api/user/<string:username>
-func (c *Controller) GetUserBy(username string) (User, error) {
-	panic("not implemented")
+// Get v1/api/user
+func (c *Controller) Get() mvc.Result {
+	uid, username := ParseUserinfo(c.Ctx)
+	user, found := c.Service.GetUserInfo(uid, username)
+	if !found {
+		return Response(iris.StatusInternalServerError, "error get user info", map[string]string{})
+	}
+	return Response(iris.StatusOK, "success!", user)
 }
 
 func (c *Controller) PostRegister() mvc.Result {
@@ -66,14 +71,16 @@ func (c *Controller) PostLogin() mvc.Result {
 		})
 }
 
-// PostLogout v1/api/user/logout
 func (c *Controller) PostLogout() mvc.Result {
 	uid, username := ParseUserinfo(c.Ctx)
 	log.Printf("uid: %v, username: %v", uid, username)
 	params := map[string]interface{}{
 		"username":      username,
-		"refresh_token": ""}
-	c.Service.Logout(params)
+		"refresh_token": "",
+	}
+	if err := c.Service.Logout(params); err != nil {
+		return Response(iris.StatusInternalServerError, "error", map[string]string{})
+	}
 	return Response(2000, "user has logout!", map[string]string{})
 }
 
@@ -93,6 +100,24 @@ func (c *Controller) PostAuthenticate() mvc.Result {
 	return Response(iris.StatusOK, "authenticate success", iris.Map{"accessToken": newToken, "refreshToken": newRefreshToken, "tokenType": "Bearer"})
 }
 
+func (c *Controller) PostAuthorize() mvc.Result {
+	params := make(map[string]string)
+	if err := c.Ctx.ReadJSON(&params); err != nil {
+		return Response(iris.StatusInternalServerError, err.Error(), map[string]string{})
+	}
+	if params["username"] == "" || params["password"] == "" {
+		return Response(iris.StatusBadRequest, "username or password can not be empty", map[string]string{})
+	}
+	authorizeToken, status := c.Service.Authorize(params["username"], params["password"])
+	if status.err != nil {
+		return Response(status.statusCode, status.err.Error(), map[string]string{})
+	}
+	return Response(iris.StatusOK, "authorize success", iris.Map{
+		"authorizeToken": authorizeToken,
+		"tokenType":      "Bearer",
+	})
+}
+
 // PutUpdate v1/api/user/update
 func (c *Controller) PutUpdate() mvc.Result {
 	uid, username := ParseUserinfo(c.Ctx)
@@ -108,9 +133,13 @@ func (c *Controller) PutUpdate() mvc.Result {
 	return Response(2000, "update success", map[string]string{})
 }
 
+// DeleteBy TODO: implement interface
 func (c *Controller) DeleteBy(id uint32) mvc.Result {
 	uid, username := ParseUserinfo(c.Ctx)
 	log.Printf("%v, %v", uid, username)
+	if isAdmin := validateAdministrator(uid); !isAdmin {
+		return Response(iris.StatusForbidden, "you don't have permission", map[string]string{})
+	}
 	isDelete := c.Service.DeleteByID(id)
 	log.Println(isDelete)
 	return Response(2000, "delete success", map[string]string{})

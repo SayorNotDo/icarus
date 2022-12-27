@@ -8,7 +8,6 @@ import (
 )
 
 // UserRepository will process some user instance operation
-// interface of test
 type UserRepository interface {
 	Insert(user User) (insertUser User, err error)
 	Select(user User) (selectUser User, found bool)
@@ -66,4 +65,7 @@ func (r *userRepository) Updates(user User, updateInfo map[string]interface{}) (
 		return tx.Error
 	}
 	return
+}
+
+type adminRepository struct {
 }
