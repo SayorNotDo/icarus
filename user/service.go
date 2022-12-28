@@ -15,7 +15,7 @@ import (
 // UserService will deal with `user` model CRUD operation
 type UserService interface {
 	Create(params map[string]string, hashedPassword []byte) Status
-	Update(user User, params map[string]interface{}) (User, error)
+	Update(user *User, params map[string]interface{}) (User, error)
 	Login(username, password string) (token, refreshToken string, status Status)
 	Logout(params map[string]interface{}) (err error)
 	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, status Status)
@@ -40,7 +40,7 @@ type Status struct {
 }
 
 func (u *userService) GetUserInfo(uid uint32, username string) (map[string]interface{}, bool) {
-	user, found := u.repo.Select(User{Username: username, UID: uid})
+	user, found := u.repo.Select(&User{Username: username, UID: uid})
 	if !found {
 		return map[string]interface{}{}, false
 	}
@@ -77,7 +77,7 @@ func (u *userService) Create(params map[string]string, hashedPassword []byte) St
 		Phone:          params["phone"],
 		HashedPassword: hashedPassword,
 	}
-	if _, err := u.repo.Insert(user); err != nil {
+	if err := u.repo.Insert(&user); err != nil {
 		return Status{
 			err:        err,
 			statusCode: iris.StatusInternalServerError,
@@ -89,7 +89,7 @@ func (u *userService) Create(params map[string]string, hashedPassword []byte) St
 	}
 }
 
-func (u *userService) Update(user User, params map[string]interface{}) (User, error) {
+func (u *userService) Update(user *User, params map[string]interface{}) (User, error) {
 	if _, found := u.repo.Select(user); !found {
 		return User{}, errors.New("user is not exist")
 	}
@@ -103,7 +103,7 @@ func (u *userService) Update(user User, params map[string]interface{}) (User, er
 }
 
 func (u *userService) Login(username, password string) (accessToken, refreshToken string, status Status) {
-	user, found := u.repo.Select(User{Username: username})
+	user, found := u.repo.Select(&User{Username: username})
 	if !found {
 		return "", "", Status{
 			err:        errors.New("user is not exist"),
@@ -139,7 +139,7 @@ func (u *userService) Login(username, password string) (accessToken, refreshToke
 // Logout TODO: implement completely
 func (u *userService) Logout(params map[string]interface{}) (err error) {
 	log.Println("implement me")
-	user := User{Username: params["username"].(string)}
+	user := &User{Username: params["username"].(string)}
 	err = u.repo.Updates(user, params)
 	return
 }
@@ -166,7 +166,7 @@ func (u *userService) Authenticate(oldAccessToken, oldRefreshToken string) (acce
 			statusCode: iris.StatusUnauthorized,
 		}
 	}
-	user, found := u.repo.Select(User{Username: userClaims["username"].(string), RefreshToken: result})
+	user, found := u.repo.Select(&User{Username: userClaims["username"].(string), RefreshToken: result})
 	if !found {
 		return "", "", Status{
 			err:        errors.New("authenticate error"),
@@ -194,7 +194,7 @@ func (u *userService) Authenticate(oldAccessToken, oldRefreshToken string) (acce
 }
 
 func (u *userService) Authorize(username, password string) (token string, status Status) {
-	user, found := u.repo.Select(User{Username: username})
+	user, found := u.repo.Select(&User{Username: username})
 	if !found {
 		return "", Status{
 			err:        errors.New("user is not exist"),
@@ -222,6 +222,10 @@ func (u *userService) Authorize(username, password string) (token string, status
 
 func (u *userService) DeleteByID(uid uint32) bool {
 	log.Println("_________________________debug____________________")
+	_, found := u.repo.Select(&User{UID: 26})
+	if !found {
+		return false
+	}
 	return false
 }
 

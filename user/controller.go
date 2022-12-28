@@ -127,7 +127,7 @@ func (c *Controller) PutUpdate() mvc.Result {
 		return Response(5000, err.Error(), map[string]string{})
 	}
 	log.Printf("json: %v", params)
-	if _, err := c.Service.Update(User{Username: username, UID: uid}, params); err != nil {
+	if _, err := c.Service.Update(&User{Username: username, UID: uid}, params); err != nil {
 		return Response(5000, err.Error(), map[string]string{})
 	}
 	return Response(2000, "update success", map[string]string{})
@@ -137,10 +137,9 @@ func (c *Controller) PutUpdate() mvc.Result {
 func (c *Controller) DeleteBy(id uint32) mvc.Result {
 	uid, username := ParseUserinfo(c.Ctx)
 	log.Printf("%v, %v", uid, username)
-	if isAdmin := validateAdministrator(uid); !isAdmin {
-		return Response(iris.StatusForbidden, "you don't have permission", map[string]string{})
-	}
-	isDelete := c.Service.DeleteByID(id)
-	log.Println(isDelete)
+	//if isAdmin := validateAdministrator(uid); !isAdmin {
+	//	return Response(iris.StatusForbidden, "you don't have permission", map[string]string{})
+	//}
+	c.Service.DeleteByID(id)
 	return Response(2000, "delete success", map[string]string{})
 }

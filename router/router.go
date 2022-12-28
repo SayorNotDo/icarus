@@ -79,9 +79,9 @@ func Initialize() *iris.Application {
 	app.Use(nriris.New(relicApp))
 
 	// log configuration
-	logFile, _ := os.Create("icarus-server.log")
+	//logFile, _ := os.Create("icarus-server.log")
 	app.Logger().SetLevel("Debug")
-	app.Logger().SetOutput(logFile)
+	//app.Logger().SetOutput(logFile)
 
 	app.ConfigureHost(func(su *iris.Supervisor) {
 		su.RegisterOnShutdown(func() {

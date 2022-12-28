@@ -18,6 +18,9 @@ func init() {
 	database.Db.Migrator().CurrentDatabase()
 
 	// Migrate: run auto migration for given models, will only add missing field, won't delete/change current data
+	//var Models = []interface{}{
+	//	&user.User{}, &user.Department{}, &project.Project{}, &project.ProjectMember{}, &project.TestPlan{}, &task.Task{}, &task.TaskContent{},
+	//}
 	err := database.Db.AutoMigrate(&user.User{}, &user.Department{}, &project.Project{}, &project.ProjectMember{}, &project.TestPlan{}, &task.Task{}, &task.TaskContent{})
 	if err != nil {
 		fmt.Println("error:", err)

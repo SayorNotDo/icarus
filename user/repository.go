@@ -4,17 +4,17 @@ import (
 	"errors"
 	"fmt"
 	database "icarus/database/mariadb"
+	. "icarus/repository"
 	"log"
 )
 
 // UserRepository will process some user instance operation
 type UserRepository interface {
-	Insert(user User) (insertUser User, err error)
-	Select(user User) (selectUser User, found bool)
-	Updates(user User, updateInfo map[string]interface{}) (err error)
+	Insert(user *User) error
+	Select(user *User) (*User, bool)
+	Updates(user *User, updateInfo map[string]interface{}) (err error)
 	Delete(uid uint32) (deleted bool)
-	QueryByField(filed string, value interface{}) (user User)
-	//Exec(query Query, action Query, limit int, mode int) (ok bool)
+	QueryByField(filed string, value interface{}) *User
 }
 
 func NewUserRepository() UserRepository {
@@ -22,50 +22,45 @@ func NewUserRepository() UserRepository {
 }
 
 type userRepository struct {
-	// mu sync.RWMutex
-}
-
-const (
-	ReadOnlyMode = iota
-	ReadWriteMode
-)
-
-func (r *userRepository) QueryByField(field string, value interface{}) (user User) {
-	database.Db.Model(&User{}).Where(fmt.Sprintf("%s = '%s'", field, value)).Find(&user)
-	return
+	base *BaseRepository
 }
 
 func (r *userRepository) Delete(uid uint32) (deleted bool) {
-	log.Println(uid)
-	return false
+	//TODO implement me
+	panic("implement me")
 }
 
-func (r *userRepository) Select(user User) (u User, found bool) {
-	result := database.Db.Model(&User{}).Where(&user).First(&u)
-	if result.Error == nil {
-		found = true
+func (r *userRepository) QueryByField(field string, value interface{}) *User {
+	user := &User{}
+	database.Db.Model(&User{}).Where(fmt.Sprintf("%s = '%s'", field, value)).Find(&user)
+	return user
+}
+
+func (r *userRepository) Select(user *User) (*User, bool) {
+	ret := &User{}
+	if err := r.base.Select("user", &user, ret); err != nil {
+		return nil, false
 	}
-	return
+	log.Println(ret)
+	return ret, true
 }
 
-func (r *userRepository) Insert(user User) (insertUser User, err error) {
+func (r *userRepository) Insert(user *User) error {
 	uid := user.UID
-	// validate if the user is already registered
-	if uid == 0 {
-		database.Db.Model(&User{}).Create(&user)
-		return user, nil
+	if uid != 0 {
+		return errors.New("user create failed")
 	}
-	return User{}, errors.New("user create failed")
+	if err := r.base.Insert("user", user); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r *userRepository) Updates(user User, updateInfo map[string]interface{}) (err error) {
-	tx := database.Db.Model(&User{}).Where(&user).Updates(updateInfo)
+func (r *userRepository) Updates(user *User, updateInfo map[string]interface{}) (err error) {
+	tx := database.Db.Model(&User{}).Where(user).Updates(updateInfo)
 	log.Println("update user")
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return
-}
-
-type adminRepository struct {
 }
