@@ -6,6 +6,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/gomodule/redigo/redis"
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
 	"golang.org/x/crypto/bcrypt"
 	redismanage "icarus/database/redis"
 	"log"
@@ -16,11 +17,12 @@ import (
 type UserService interface {
 	Create(params map[string]string, hashedPassword []byte) Status
 	Update(user *User, params map[string]interface{}) (User, error)
-	Login(username, password string) (token, refreshToken string, status Status)
+	Login(username, password string) (tokenMap context.Map, status Status)
 	Logout(params map[string]interface{}) (err error)
 	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, status Status)
 	Authorize(username, password string) (authorizeToken string, status Status)
-	GetUserInfo(uid uint32, username string) (map[string]interface{}, bool)
+	GetUserInfo(ctx iris.Context) map[string]interface{}
+	updateLoginTime(user *User) bool
 	DeleteByID(uid uint32) bool
 }
 
@@ -39,24 +41,24 @@ type Status struct {
 	statusCode int16
 }
 
-func (u *userService) GetUserInfo(uid uint32, username string) (map[string]interface{}, bool) {
-	user, found := u.repo.Select(&User{Username: username, UID: uid})
-	if !found {
-		return map[string]interface{}{}, false
+func (u *userService) GetUserInfo(ctx iris.Context) map[string]interface{} {
+	uid, username := ParseUserinfo(ctx)
+	if user := u.repo.Select(&User{Username: username, UID: uid}); user != nil {
+		userInfo := map[string]interface{}{
+			"Username":    user.Username,
+			"Uid":         user.UID,
+			"Email":       user.Email,
+			"ChineseName": user.ChineseName,
+			"RoleId":      user.RoleId,
+			"EmployeeId":  user.EmployeeId,
+			"JoinDate":    user.JoinDate,
+			"Position":    user.Position,
+			"Phone":       user.Phone,
+			"Department":  user.Department,
+		}
+		return userInfo
 	}
-	userInfo := map[string]interface{}{
-		"Username":    user.Username,
-		"Uid":         user.UID,
-		"Email":       user.Email,
-		"ChineseName": user.ChineseName,
-		"RoleId":      user.RoleId,
-		"EmployeeId":  user.EmployeeId,
-		"JoinDate":    user.JoinDate,
-		"Position":    user.Position,
-		"Phone":       user.Phone,
-		"Department":  user.Department,
-	}
-	return userInfo, true
+	return nil
 }
 
 // Create insert a new user
@@ -90,7 +92,7 @@ func (u *userService) Create(params map[string]string, hashedPassword []byte) St
 }
 
 func (u *userService) Update(user *User, params map[string]interface{}) (User, error) {
-	if _, found := u.repo.Select(user); !found {
+	if user := u.repo.Select(user); user == nil {
 		return User{}, errors.New("user is not exist")
 	}
 	if err := userValidate(params); err != nil {
@@ -102,38 +104,46 @@ func (u *userService) Update(user *User, params map[string]interface{}) (User, e
 	return User{}, nil
 }
 
-func (u *userService) Login(username, password string) (accessToken, refreshToken string, status Status) {
-	user, found := u.repo.Select(&User{Username: username})
-	if !found {
-		return "", "", Status{
+func (u *userService) Login(username, password string) (tokenMap context.Map, status Status) {
+	user := u.repo.Select(&User{Username: username})
+	if user == nil {
+		return nil, Status{
 			err:        errors.New("user is not exist"),
 			statusCode: iris.StatusBadRequest,
 		}
 	}
 	if ok, _ := validatePassword(password, user.HashedPassword); !ok {
-		return "", "", Status{
+		return nil, Status{
 			err:        errors.New("username or password is wrong"),
 			statusCode: iris.StatusBadRequest,
 		}
 	}
-	accessToken, refreshToken, err := generateToken(user.Username, user.UID)
+	tokenMap, err := generateToken(user.Username, user.UID)
 	if err != nil {
-		return "", "", Status{
+		return nil, Status{
 			err:        err,
 			statusCode: iris.StatusInternalServerError,
 		}
 	}
-	lastLoginTime := time.Now()
-	if err := u.repo.Updates(user, map[string]interface{}{"refresh_token": refreshToken, "last_login_time": lastLoginTime}); err != nil {
-		return "", "", Status{
+	if err := u.repo.Updates(user, map[string]interface{}{"refresh_token": tokenMap["refreshToken"]}); err != nil {
+		return nil, Status{
 			err:        err,
 			statusCode: iris.StatusInternalServerError,
 		}
 	}
-	return accessToken, refreshToken, Status{
+	u.updateLoginTime(user)
+	return tokenMap, Status{
 		err:        nil,
 		statusCode: iris.StatusOK,
 	}
+}
+
+func (u *userService) updateLoginTime(user *User) bool {
+	currentTime := time.Now()
+	if err := u.repo.Updates(user, map[string]interface{}{"last_login_time": currentTime}); err != nil {
+		return false
+	}
+	return true
 }
 
 // Logout TODO: implement completely
@@ -166,14 +176,14 @@ func (u *userService) Authenticate(oldAccessToken, oldRefreshToken string) (acce
 			statusCode: iris.StatusUnauthorized,
 		}
 	}
-	user, found := u.repo.Select(&User{Username: userClaims["username"].(string), RefreshToken: result})
-	if !found {
+	user := u.repo.Select(&User{Username: userClaims["username"].(string), RefreshToken: result})
+	if user == nil {
 		return "", "", Status{
 			err:        errors.New("authenticate error"),
 			statusCode: iris.StatusInternalServerError,
 		}
 	}
-	accessToken, refreshToken, err = generateToken(user.Username, user.UID)
+	tokenMap, err := generateToken(user.Username, user.UID)
 	if err != nil {
 		log.Println("error generate accessToken")
 		return "", "", Status{
@@ -181,7 +191,7 @@ func (u *userService) Authenticate(oldAccessToken, oldRefreshToken string) (acce
 			statusCode: iris.StatusInternalServerError,
 		}
 	}
-	if err := u.repo.Updates(user, map[string]interface{}{"refresh_token": refreshToken}); err != nil {
+	if err := u.repo.Updates(user, map[string]interface{}{"refresh_token": tokenMap["refreshToken"]}); err != nil {
 		return "", "", Status{
 			err:        err,
 			statusCode: iris.StatusInternalServerError,
@@ -194,8 +204,8 @@ func (u *userService) Authenticate(oldAccessToken, oldRefreshToken string) (acce
 }
 
 func (u *userService) Authorize(username, password string) (token string, status Status) {
-	user, found := u.repo.Select(&User{Username: username})
-	if !found {
+	user := u.repo.Select(&User{Username: username})
+	if user == nil {
 		return "", Status{
 			err:        errors.New("user is not exist"),
 			statusCode: iris.StatusBadRequest,
@@ -221,11 +231,6 @@ func (u *userService) Authorize(username, password string) (token string, status
 }
 
 func (u *userService) DeleteByID(uid uint32) bool {
-	log.Println("_________________________debug____________________")
-	_, found := u.repo.Select(&User{UID: 26})
-	if !found {
-		return false
-	}
 	return false
 }
 
@@ -241,15 +246,19 @@ func validatePassword(password string, hashed []byte) (bool, error) {
 	return true, nil
 }
 
-func generateToken(username string, uid uint32) (accessToken, refreshToken string, err error) {
-	accessToken, err = generateAccessToken(username, uid)
+func generateToken(username string, uid uint32) (token context.Map, err error) {
+	tokenMap := make(context.Map)
+	accessToken, err := generateAccessToken(username, uid)
 	if err != nil {
-		return "", "", err
+		return tokenMap, err
 	}
-	refreshToken, err = generateRefreshToken(accessToken)
+	tokenMap["accessToken"] = accessToken
+	refreshToken, err := generateRefreshToken(accessToken)
 	if err != nil {
-		return "", "", err
+		return tokenMap, err
 	}
+	tokenMap["refreshToken"] = refreshToken
+	tokenMap["tokenType"] = "Bearer"
 	conn := redismanage.Pool.Get()
 	defer func(conn redis.Conn) {
 		if err := conn.Close(); err != nil {
@@ -257,9 +266,9 @@ func generateToken(username string, uid uint32) (accessToken, refreshToken strin
 		}
 	}(conn)
 	if _, err := conn.Do("SET", fmt.Sprintf("%s:%s", username, "refreshToken"), refreshToken, "EX", 60*60*24*7); err != nil {
-		return "", "", err
+		return tokenMap, err
 	}
-	return accessToken, refreshToken, nil
+	return tokenMap, nil
 }
 
 func validateAdministrator(uid uint32) bool {

@@ -16,29 +16,28 @@ type Controller struct {
 
 // Get v1/api/user
 func (c *Controller) Get() mvc.Result {
-	uid, username := ParseUserinfo(c.Ctx)
-	user, found := c.Service.GetUserInfo(uid, username)
-	if !found {
-		return Response(iris.StatusInternalServerError, "error get user info", map[string]string{})
+	user := c.Service.GetUserInfo(c.Ctx)
+	if user == nil {
+		return ResponseError(iris.StatusInternalServerError, "error get user info")
 	}
-	return Response(iris.StatusOK, "success!", user)
+	return ResponseSuccess("success!", user)
 }
 
 func (c *Controller) PostRegister() mvc.Result {
 	var params map[string]string
 	if err := c.Ctx.ReadJSON(&params); err != nil {
-		return Response(500, err.Error(), map[string]string{})
+		return ResponseError(iris.StatusInternalServerError, err.Error())
 	}
 	if params["username"] == "" || params["password"] == "" {
-		return Response(iris.StatusBadRequest, "username or password can not be empty", map[string]string{})
+		return ResponseError(iris.StatusBadRequest, "username or password can not be empty")
 	} else if params["email"] == "" {
-		return Response(iris.StatusBadRequest, "email can not be empty", map[string]string{})
+		return ResponseError(iris.StatusBadRequest, "email can not be empty")
 	} else if params["phone"] == "" {
-		return Response(iris.StatusBadRequest, "phone number can not be empty", map[string]string{})
+		return ResponseError(iris.StatusBadRequest, "phone number can not be empty")
 	}
 	hashed, err := generatePassword(params["password"])
 	if err != nil {
-		return Response(iris.StatusInternalServerError, "password hashed error", map[string]string{})
+		return ResponseError(iris.StatusInternalServerError, "password hashed error")
 	}
 	createInfo := map[string]string{
 		"username": params["username"],
@@ -46,7 +45,7 @@ func (c *Controller) PostRegister() mvc.Result {
 		"phone":    params["phone"],
 	}
 	if status := c.Service.Create(createInfo, hashed); status.err != nil {
-		return Response(status.statusCode, status.err.Error(), map[string]string{})
+		return ResponseError(status.statusCode, status.err.Error())
 	}
 	return Response(iris.StatusCreated, "register success!", map[string]string{})
 }
@@ -54,21 +53,17 @@ func (c *Controller) PostRegister() mvc.Result {
 func (c *Controller) PostLogin() mvc.Result {
 	params := make(map[string]string)
 	if err := c.Ctx.ReadJSON(&params); err != nil {
-		return Response(iris.StatusInternalServerError, err.Error(), map[string]string{})
+		return ResponseError(iris.StatusInternalServerError, err.Error())
 	}
 	if params["username"] == "" || params["password"] == "" {
-		return Response(iris.StatusBadRequest, "username or password can not be empty", map[string]string{})
+		return ResponseError(iris.StatusBadRequest, "username or password can not be empty")
 	}
-	accessToken, refreshToken, status := c.Service.Login(params["username"], params["password"])
+	tokenMap, status := c.Service.Login(params["username"], params["password"])
 	if status.err != nil {
-		return Response(status.statusCode, status.err.Error(), map[string]string{})
+		return ResponseError(status.statusCode, status.err.Error())
 	}
 	return Response(iris.StatusOK, "login success!",
-		iris.Map{
-			"accessToken":  accessToken,
-			"refreshToken": refreshToken,
-			"tokenType":    "Bearer",
-		})
+		tokenMap)
 }
 
 func (c *Controller) PostLogout() mvc.Result {

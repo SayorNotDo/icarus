@@ -11,8 +11,8 @@ import (
 // UserRepository will process some user instance operation
 type UserRepository interface {
 	Insert(user *User) error
-	Select(user *User) (*User, bool)
-	Updates(user *User, updateInfo map[string]interface{}) (err error)
+	Select(user *User) *User
+	Updates(user *User, updateInfo map[string]interface{}) error
 	Delete(uid uint32) (deleted bool)
 	QueryByField(filed string, value interface{}) *User
 }
@@ -36,13 +36,12 @@ func (r *userRepository) QueryByField(field string, value interface{}) *User {
 	return user
 }
 
-func (r *userRepository) Select(user *User) (*User, bool) {
+func (r *userRepository) Select(user *User) *User {
 	ret := &User{}
 	if err := r.base.Select("user", &user, ret); err != nil {
-		return nil, false
+		return nil
 	}
-	log.Println(ret)
-	return ret, true
+	return ret
 }
 
 func (r *userRepository) Insert(user *User) error {
