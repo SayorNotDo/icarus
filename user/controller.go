@@ -14,11 +14,10 @@ type Controller struct {
 	Service UserService
 }
 
-// Get v1/api/user
 func (c *Controller) Get() mvc.Result {
 	user := c.Service.GetUserInfo(c.Ctx)
 	if user == nil {
-		return ResponseError(iris.StatusInternalServerError, "error get user info")
+		return ResponseError(iris.StatusNotFound, "user not found")
 	}
 	return ResponseSuccess("success!", user)
 }
@@ -113,7 +112,6 @@ func (c *Controller) PostAuthorize() mvc.Result {
 	})
 }
 
-// PutUpdate v1/api/user/update
 func (c *Controller) PutUpdate() mvc.Result {
 	uid, username := ParseUserinfo(c.Ctx)
 	log.Printf("%v, %v", uid, username)
@@ -128,7 +126,6 @@ func (c *Controller) PutUpdate() mvc.Result {
 	return Response(2000, "update success", map[string]string{})
 }
 
-// DeleteBy TODO: implement interface
 func (c *Controller) DeleteBy(id uint32) mvc.Result {
 	uid, username := ParseUserinfo(c.Ctx)
 	log.Printf("%v, %v", uid, username)

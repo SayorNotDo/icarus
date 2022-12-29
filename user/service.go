@@ -21,7 +21,7 @@ type UserService interface {
 	Logout(params map[string]interface{}) (err error)
 	Authenticate(oldToken, oldRefreshToken string) (token, refreshToken string, status Status)
 	Authorize(username, password string) (authorizeToken string, status Status)
-	GetUserInfo(ctx iris.Context) map[string]interface{}
+	GetUserInfo(ctx iris.Context) *UserInfo
 	updateLoginTime(user *User) bool
 	DeleteByID(uid uint32) bool
 }
@@ -41,29 +41,13 @@ type Status struct {
 	statusCode int16
 }
 
-func (u *userService) GetUserInfo(ctx iris.Context) map[string]interface{} {
+func (u *userService) GetUserInfo(ctx iris.Context) *UserInfo {
 	uid, username := ParseUserinfo(ctx)
-	if user := u.repo.Select(&User{Username: username, UID: uid}); user != nil {
-		userInfo := map[string]interface{}{
-			"Username":    user.Username,
-			"Uid":         user.UID,
-			"Email":       user.Email,
-			"ChineseName": user.ChineseName,
-			"RoleId":      user.RoleId,
-			"EmployeeId":  user.EmployeeId,
-			"JoinDate":    user.JoinDate,
-			"Position":    user.Position,
-			"Phone":       user.Phone,
-			"Department":  user.Department,
-		}
-		return userInfo
-	}
-	return nil
+	user := u.repo.Select(&User{Username: username, UID: uid})
+	userInfo := BuildUserInfo(user)
+	return userInfo
 }
 
-// Create insert a new user
-// the password is the client-typed password
-// it will be hashed before the insertion to our repository.
 func (u *userService) Create(params map[string]string, hashedPassword []byte) Status {
 	for key, val := range params {
 		if queryResult := u.repo.QueryByField(key, val); queryResult.UID != 0 {
@@ -112,7 +96,7 @@ func (u *userService) Login(username, password string) (tokenMap context.Map, st
 			statusCode: iris.StatusBadRequest,
 		}
 	}
-	if ok, _ := validatePassword(password, user.HashedPassword); !ok {
+	if ok := validatePassword(password, user.HashedPassword); !ok {
 		return nil, Status{
 			err:        errors.New("username or password is wrong"),
 			statusCode: iris.StatusBadRequest,
@@ -146,7 +130,6 @@ func (u *userService) updateLoginTime(user *User) bool {
 	return true
 }
 
-// Logout TODO: implement completely
 func (u *userService) Logout(params map[string]interface{}) (err error) {
 	log.Println("implement me")
 	user := &User{Username: params["username"].(string)}
@@ -211,7 +194,7 @@ func (u *userService) Authorize(username, password string) (token string, status
 			statusCode: iris.StatusBadRequest,
 		}
 	}
-	if ok, _ := validatePassword(password, user.HashedPassword); !ok {
+	if ok := validatePassword(password, user.HashedPassword); !ok {
 		return "", Status{
 			err:        errors.New("username or password is wrong"),
 			statusCode: iris.StatusBadRequest,
@@ -238,12 +221,11 @@ func generatePassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
 
-func validatePassword(password string, hashed []byte) (bool, error) {
-	log.Println("validate processing...")
+func validatePassword(password string, hashed []byte) bool {
 	if err := bcrypt.CompareHashAndPassword(hashed, []byte(password)); err != nil {
-		return false, err
+		return false
 	}
-	return true, nil
+	return true
 }
 
 func generateToken(username string, uid uint32) (token context.Map, err error) {

@@ -46,7 +46,7 @@ func (Department) TableName() string {
 
 type Serializer struct {
 	UID            uint32    `json:"uid"`
-	JoinDate       time.Time `json:"join_date" gorm:"autoCreateTime"`
+	JoinDate       time.Time `json:"join_date"`
 	LastLoginTime  time.Time `json:"last_login_time" gorm:"autoUpdateTime:milli"`
 	Username       string    `json:"username"`
 	HashedPassword []byte    `json:"-"`
@@ -80,4 +80,22 @@ func userValidate(params map[string]interface{}) (err error) {
 		}
 	}
 	return nil
+}
+
+/* response struct */
+
+type UserInfo struct {
+	UID         uint32 `json:"uid" gorm:"primaryKey; autoIncrement"`
+	Username    string `json:"username" gorm:"unique; not null; type:varchar(32)"`
+	ChineseName string `json:"chinese_name" gorm:"type:varchar(32)"`
+	EmployeeId  string `json:"employee_id" gorm:"type:varchar(32)"`
+	Position    string `json:"position" gorm:"type:varchar(256)"`
+	Email       string `json:"email" gorm:"type:varchar(256)" validate:"email"`
+	Phone       string `json:"phone" gorm:"type:varchar(32)"`
+	Department  string `json:"department" gorm:"type:varchar(256)"`
+}
+
+type UserDetail struct {
+	UserInfo
+	JoinDate time.Time `json:"join_date"`
 }
